@@ -99,7 +99,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return ApiError.internal(`数据库错误: ${photosResult.error.message}`)
     }
 
-    const photos = photosResult.data || []
+    const photos = (photosResult.data || []) as Array<{ id: string; album_id: string; original_key: string; status: string }>
 
     if (!photos || photos.length === 0) {
       return ApiError.badRequest('相册中没有需要重新处理的照片')

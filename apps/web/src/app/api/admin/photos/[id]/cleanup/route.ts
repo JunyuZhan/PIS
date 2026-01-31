@@ -40,7 +40,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     // 查询照片记录（获取 original_key 用于清理 MinIO 文件）
     const adminClient = await createAdminClient()
     const photoResult = await adminClient
-      .from('photos')
+      .from<{ id: string; status: string; album_id: string; original_key: string | null }>('photos')
       .select('id, status, album_id, original_key')
       .eq('id', photoId)
       .single()

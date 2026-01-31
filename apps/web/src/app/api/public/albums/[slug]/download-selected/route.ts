@@ -45,7 +45,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 
     // 1. 获取相册信息
     const albumResult = await db
-      .from('albums')
+      .from<{ id: string; title: string | null; allow_download: boolean; allow_batch_download: boolean }>('albums')
       .select('id, title, allow_download, allow_batch_download')
       .eq('slug', slug)
       .is('deleted_at', null)
@@ -68,7 +68,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 
     // 3. 获取所有已选照片
     const photosResult = await db
-      .from('photos')
+      .from<{ id: string; filename: string | null; original_key: string | null }>('photos')
       .select('id, filename, original_key')
       .eq('album_id', album.id)
       .eq('is_selected', true)
@@ -106,7 +106,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
             body: JSON.stringify({
               key: photo.original_key,
               expirySeconds: 5 * 60, // 5 分钟有效期
-              responseContentDisposition: `attachment; filename="${encodeURIComponent(photo.filename)}"`,
+              responseContentDisposition: `attachment; filename="${encodeURIComponent(photo.filename || 'photo')}"`,
             }),
           })
 

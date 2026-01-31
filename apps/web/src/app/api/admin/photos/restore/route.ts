@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     // 验证照片存在且已删除
     const deletedPhotosResult = await adminClient
-      .from('photos')
+      .from<{ id: string; album_id: string; deleted_at: string | null }>('photos')
       .select('id, album_id, deleted_at')
       .in('id', photoIds)
       .not('deleted_at', 'is', null)

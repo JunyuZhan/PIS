@@ -65,7 +65,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     // 首先验证照片存在且所属相册未删除，照片也未删除
     // 查询照片
     const photoResult = await db
-      .from('photos')
+      .from<{ id: string; album_id: string; deleted_at: string | null }>('photos')
       .select('id, album_id, deleted_at')
       .eq('id', id)
       .eq('status', 'completed')
@@ -78,7 +78,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     // 验证相册存在且未删除
     const albumResult = await db
-      .from('albums')
+      .from<{ id: string }>('albums')
       .select('id')
       .eq('id', photoResult.data.album_id)
       .is('deleted_at', null)
@@ -90,7 +90,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     // 更新选中状态
     // 使用 Admin Client 执行更新操作，因为我们已经移除了匿名用户的 UPDATE 权限
-    const updateResult = await dbAdmin.update('photos', { is_selected: isSelected }, { id })
+    const updateResult = await dbAdmin.update<{ id: string; is_selected: boolean }>('photos', { is_selected: isSelected }, { id })
 
     if (updateResult.error) {
       return handleError(updateResult.error, '更新选中状态失败')
@@ -125,7 +125,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const db = await createClient()
 
     const photoResult = await db
-      .from('photos')
+      .from<{ id: string; is_selected: boolean }>('photos')
       .select('id, is_selected')
       .eq('id', id)
       .eq('status', 'completed')
@@ -137,7 +137,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     const photo = photoResult.data
-
+    
     return createSuccessResponse({
       id: photo.id,
       isSelected: photo.is_selected,

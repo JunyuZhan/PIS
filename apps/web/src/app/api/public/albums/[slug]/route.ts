@@ -65,7 +65,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     // 获取相册信息（包含密码字段，但不直接返回）
     const result = await db
-      .from('albums')
+      .from<{ id: string; title: string | null; description: string | null; layout: string; allow_download: boolean; show_exif: boolean; photo_count: number; password: string | null; expires_at: string | null; is_public: boolean; allow_share: boolean }>('albums')
       .select('id, title, description, layout, allow_download, show_exif, photo_count, password, expires_at, is_public, allow_share')
       .eq('slug', slug)
       .is('deleted_at', null)

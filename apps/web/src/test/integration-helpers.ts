@@ -34,17 +34,13 @@ export async function createTestAlbum(overrides: Partial<TestAlbum> = {}): Promi
     is_public: overrides.is_public ?? false,
   }
 
-  const { data: album, error } = await adminClient
-    .from('albums')
-    .insert(albumData)
-    .select()
-    .single()
-
-  if (error || !album) {
+  const { data: album, error } = await adminClient.insert('albums', albumData)
+  
+  if (error || !album || album.length === 0) {
     throw new Error(`Failed to create test album: ${error?.message}`)
   }
-
-  return album as TestAlbum
+  
+  return album[0] as TestAlbum
 }
 
 /**
@@ -82,17 +78,13 @@ export async function createTestPhoto(
     original_key: `raw/${albumId}/${overrides.id || uuidv4()}.jpg`,
   }
 
-  const { data: photo, error } = await adminClient
-    .from('photos')
-    .insert(photoData)
-    .select()
-    .single()
+  const { data: photo, error } = await adminClient.insert('photos', photoData)
 
-  if (error || !photo) {
+  if (error || !photo || photo.length === 0) {
     throw new Error(`Failed to create test photo: ${error?.message}`)
   }
 
-  return photo as TestPhoto
+  return photo[0] as TestPhoto
 }
 
 /**

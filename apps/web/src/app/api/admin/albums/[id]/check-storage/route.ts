@@ -65,7 +65,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     const dbPhotos = dbPhotosResult.data || []
-    const albumData = albumResult.data
+    const albumData = albumResult.data as { id: string; title: string }
 
     // 使用代理路由调用 Worker API 检查 MinIO 中的文件
     // 代理路由会自动处理 Worker URL 配置和认证
@@ -121,7 +121,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const dbThumbKeys = new Set<string>()
     const dbPreviewKeys = new Set<string>()
 
-    dbPhotos?.forEach(photo => {
+    type Photo = { id: string; filename: string | null; status: string; original_key: string | null; thumb_key: string | null; preview_key: string | null }
+    const typedPhotos = (dbPhotos || []) as Photo[]
+
+    typedPhotos.forEach(photo => {
       if (photo.original_key) dbPhotoKeys.add(photo.original_key)
       if (photo.thumb_key) dbThumbKeys.add(photo.thumb_key)
       if (photo.preview_key) dbPreviewKeys.add(photo.preview_key)
@@ -132,7 +135,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     // 找出数据库中有但 MinIO 中没有的文件
     const missingInStorage: string[] = []
-    dbPhotos?.forEach(photo => {
+    typedPhotos.forEach(photo => {
       if (photo.original_key && !rawFileKeys.has(photo.original_key)) {
         missingInStorage.push(`原始文件: ${photo.original_key}`)
       }
@@ -170,7 +173,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         missingInDb: missingInDb.length,
       },
       details: {
-        dbPhotos: dbPhotos?.map(p => ({
+        dbPhotos: typedPhotos.map(p => ({
           id: p.id,
           filename: p.filename,
           status: p.status,

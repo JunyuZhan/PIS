@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/database'
 import { getCurrentUser } from '@/lib/auth/api-helpers'
-import type { AlbumUpdate } from '@/types/database'
+import type { AlbumUpdate, Json } from '@/types/database'
 import { updateAlbumSchema, albumIdSchema } from '@/lib/validation/schemas'
 import { safeValidate, handleError, createSuccessResponse, ApiError } from '@/lib/validation/error-handler'
 
@@ -134,8 +134,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return handleError(new Error('请求格式错误'), '请求体格式错误')
     }
 
-    // 验证输入（使用 partial 允许所有字段可选）
-    const validation = safeValidate(updateAlbumSchema.partial(), body)
+    // 验证输入（updateAlbumSchema 的所有字段已经是可选的）
+    const validation = safeValidate(updateAlbumSchema, body)
     if (!validation.success) {
       return handleError(validation.error, '输入验证失败')
     }
@@ -183,10 +183,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       updateData.watermark_type = validatedData.watermark_type || null
     }
     if (validatedData.watermark_config !== undefined) {
-      updateData.watermark_config = validatedData.watermark_config as Json || null
+      updateData.watermark_config = validatedData.watermark_config as Json | null
     }
     if (validatedData.color_grading !== undefined) {
-      updateData.color_grading = validatedData.color_grading as Json || null
+      updateData.color_grading = validatedData.color_grading as Json | null
     }
     if (validatedData.password !== undefined) {
       // 密码字段：空字符串转换为 null
@@ -223,8 +223,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       .eq('album_id', id)
       .eq('status', 'completed')
       .is('deleted_at', null)
+      .execute()
     
-    const actualPhotoCount = photoCountResult.count || photoCountResult.data?.length || 0
+    const actualPhotoCount = (photoCountResult as { data: unknown[] | null; error: Error | null; count?: number }).count || photoCountResult.data?.length || 0
     if (actualPhotoCount !== null) {
       updateData.photo_count = actualPhotoCount
     }
@@ -298,16 +299,25 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return ApiError.unauthorized('请先登录')
     }
 
+    // 先获取相册信息（用于返回消息）
+    const albumResult = await db
+      .from('albums')
+      .select('id, title')
+      .eq('id', id)
+      .is('deleted_at', null)
+      .single()
+
+    if (albumResult.error || !albumResult.data) {
+      return ApiError.notFound('相册不存在')
+    }
+
+    const album = albumResult.data as { id: string; title: string }
+
     // 软删除：设置 deleted_at 时间戳
     const result = await db.update('albums', { deleted_at: new Date().toISOString() }, { id, deleted_at: null })
 
     if (result.error) {
       return handleError(result.error, '删除相册失败')
-    }
-
-    const album = result.data && result.data.length > 0 ? result.data[0] : null
-    if (!album) {
-      return ApiError.notFound('相册不存在或已删除')
     }
 
     return createSuccessResponse({

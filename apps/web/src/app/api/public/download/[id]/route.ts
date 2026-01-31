@@ -42,7 +42,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     // 获取照片信息
     const photoResult = await db
-      .from('photos')
+      .from<{ id: string; original_key: string | null; filename: string | null; album_id: string }>('photos')
       .select('id, original_key, filename, album_id')
       .eq('id', id)
       .eq('status', 'completed')
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     // 获取相册信息，检查下载权限
     const albumResult = await db
-      .from('albums')
+      .from<{ id: string; allow_download: boolean; deleted_at: string | null }>('albums')
       .select('id, allow_download, deleted_at')
       .eq('id', photo.album_id)
       .single()

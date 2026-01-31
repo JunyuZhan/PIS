@@ -47,7 +47,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return ApiError.notFound('相册不存在')
     }
 
-    const album = albumResult.data
+    const album = albumResult.data as { id: string; user_id: string; is_public: boolean }
 
     // 验证权限：管理员或公开相册的访客
     if (user && album.user_id === user.id) {
@@ -121,6 +121,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     if (!albumResult.data) {
       return ApiError.notFound('相册不存在')
     }
+
+    const album = albumResult.data as { id: string; user_id: string; is_public: boolean }
 
     // 验证分组存在
     const groupResult = await db
@@ -227,6 +229,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!albumResult.data) {
       return ApiError.notFound('相册不存在')
     }
+
+    const album = albumResult.data as { id: string; user_id: string; is_public: boolean }
 
     // 验证分组存在
     const groupResult = await db

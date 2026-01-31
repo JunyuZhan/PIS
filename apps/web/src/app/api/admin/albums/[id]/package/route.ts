@@ -3,6 +3,7 @@ import { createClient } from '@/lib/database'
 import { getCurrentUser } from '@/lib/auth/api-helpers'
 import { packageDownloadSchema, packageIdQuerySchema, albumIdSchema } from '@/lib/validation/schemas'
 import { safeValidate, handleError, ApiError } from '@/lib/validation/error-handler'
+import type { PackageDownload } from '@/types/database'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -71,7 +72,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           return ApiError.notFound('相册不存在')
         }
 
-        const album = albumResult.data
+        const album = albumResult.data as { id: string; title: string; allow_download: boolean }
 
         if (!album.allow_download) {
           return ApiError.forbidden('此相册不允许下载')
@@ -133,6 +134,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           return ApiError.internal('创建打包任务失败')
         }
 
+        const typedPackageData = packageData as PackageDownload
+
     // 触发 Worker 处理
     const workerUrl = process.env.NEXT_PUBLIC_WORKER_URL || 'http://localhost:3001'
     const headers: HeadersInit = { 'Content-Type': 'application/json' }
@@ -145,7 +148,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          packageId: packageData.id,
+          packageId: typedPackageData.id,
           albumId: id,
           photoIds: finalPhotoIds,
           includeWatermarked,
@@ -158,7 +161,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     return NextResponse.json({
-      packageId: packageData.id,
+      packageId: typedPackageData.id,
       status: 'pending',
       message: '打包任务已创建，正在处理中...',
     })

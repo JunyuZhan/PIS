@@ -120,7 +120,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       query = query.eq('is_selected', false)
     }
 
-    const result = await query
+    const result = await query.execute()
 
     if (result.error) {
       return handleError(result.error, '查询照片列表失败')
@@ -137,6 +137,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .eq('is_selected', true)
       .eq('status', 'completed')
       .is('deleted_at', null)
+      .execute()
     
     const selectedCount = selectedCountResult.count || selectedCountResult.data?.length || 0
 
@@ -249,7 +250,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    const albumData = albumResult.data
+    const albumData = albumResult.data as { id: string; slug: string; cover_photo_id: string | null }
 
     // 验证照片属于该相册，并获取文件路径信息（只查询未删除的照片）
     const photosResult = await db
@@ -353,6 +354,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       .eq('album_id', id)
       .eq('status', 'completed')
       .is('deleted_at', null) // 只统计未删除的照片
+      .execute()
     
     const actualPhotoCount = photoCountResult.count || photoCountResult.data?.length || 0
     await db.update('albums', { photo_count: actualPhotoCount }, { id })

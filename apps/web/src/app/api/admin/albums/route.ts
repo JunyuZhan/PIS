@@ -239,6 +239,9 @@ export async function POST(request: NextRequest) {
     // 生成分享URL（添加错误处理）
     let shareUrl: string
     try {
+      if (!data.slug) {
+        throw new Error('Slug is required')
+      }
       shareUrl = getAlbumShareUrl(data.slug)
     } catch (error) {
       console.error('Failed to generate share URL:', error)

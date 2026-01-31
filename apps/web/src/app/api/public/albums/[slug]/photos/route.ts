@@ -47,7 +47,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     // 先获取相册 ID（检查密码和过期时间）
     const albumResult = await db
-      .from('albums')
+      .from<{ id: string; sort_rule: string | null; password: string | null; expires_at: string | null; is_public: boolean; allow_share: boolean }>('albums')
       .select('id, sort_rule, password, expires_at, is_public, allow_share')
       .eq('slug', slug)
       .single()

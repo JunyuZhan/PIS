@@ -22,7 +22,7 @@ export class PostgreSQLAuthDatabase implements ExtendedAuthDatabase {
    */
   async findUserByEmail(email: string): Promise<{ id: string; email: string; password_hash: string } | null> {
     const db = await createAdminClient()
-    const { data, error } = await db.from('users').eq('email', email.toLowerCase()).single()
+    const { data, error } = await db.from<{ id: string; email: string; password_hash: string }>('users').eq('email', email.toLowerCase()).single()
     
     if (error || !data) {
       return null
@@ -40,12 +40,12 @@ export class PostgreSQLAuthDatabase implements ExtendedAuthDatabase {
    */
   async createUser(email: string, passwordHash: string): Promise<{ id: string; email: string }> {
     const db = await createAdminClient()
-    const { data, error } = await db.insert('users', {
+    const { data, error } = await db.insert<{ id: string; email: string; password_hash: string; role: string; is_active: boolean }>('users', {
       email: email.toLowerCase(),
       password_hash: passwordHash,
       role: 'admin',
       is_active: true,
-    })
+    } as any)
     
     if (error || !data || data.length === 0) {
       throw new Error(error?.message || 'Failed to create user')

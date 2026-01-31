@@ -15,6 +15,7 @@ import type { Database } from '@/types/database'
 
 type Album = Database['public']['Tables']['albums']['Row']
 type Photo = Database['public']['Tables']['photos']['Row']
+type PhotoGroup = Database['public']['Tables']['photo_groups']['Row']
 
 interface AlbumPageProps {
   params: Promise<{ slug: string }>
@@ -44,7 +45,16 @@ export async function generateMetadata({ params }: AlbumPageProps): Promise<Meta
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
   const mediaUrl = process.env.NEXT_PUBLIC_MEDIA_URL || 'http://localhost:9000/pis-photos'
   
-  const album = albumResult.data
+  const album = albumResult.data as {
+    title: string
+    description: string | null
+    share_title: string | null
+    share_description: string | null
+    share_image_url: string | null
+    poster_image_url: string | null
+    cover_photo_id: string | null
+    slug: string
+  }
 
   // 使用自定义分享配置，如果没有则使用默认值
   const shareTitle = album.share_title || album.title
@@ -155,7 +165,7 @@ export default async function AlbumPage({ params, searchParams }: AlbumPageProps
     notFound()
   }
 
-  const albumData = albumResult.data
+  const albumData = albumResult.data as Album
 
   // 获取实际照片数量（确保计数准确，排除已删除的照片）
   const photoCountResult = await db
@@ -164,6 +174,7 @@ export default async function AlbumPage({ params, searchParams }: AlbumPageProps
     .eq('album_id', albumData.id)
     .eq('status', 'completed')
     .is('deleted_at', null)
+    .execute()
 
   const actualPhotoCount = photoCountResult.count || photoCountResult.data?.length || 0
 
@@ -208,8 +219,9 @@ export default async function AlbumPage({ params, searchParams }: AlbumPageProps
     .eq('album_id', album.id)
     .order('sort_order', { ascending: true })
     .order('created_at', { ascending: true })
+    .execute()
 
-  const groups = groupsResult.data || []
+  const groups = (groupsResult.data || []) as PhotoGroup[]
 
   // 获取照片列表（排除已删除的照片）
   const photosResult = await db
@@ -220,6 +232,7 @@ export default async function AlbumPage({ params, searchParams }: AlbumPageProps
     .is('deleted_at', null)
     .order(orderBy, { ascending })
     .limit(20)
+    .execute()
 
   const photos = (photosResult.data || []) as Photo[]
 
@@ -231,6 +244,7 @@ export default async function AlbumPage({ params, searchParams }: AlbumPageProps
         .from('photo_group_assignments')
         .select('photo_id')
         .eq('group_id', group.id)
+        .execute()
       
       if (assignmentsResult.data) {
         photoGroupMap.set(group.id, assignmentsResult.data.map((a: any) => a.photo_id))

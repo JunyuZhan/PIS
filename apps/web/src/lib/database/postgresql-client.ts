@@ -5,7 +5,7 @@
  * 适配 Next.js Server Components 和 API Routes
  */
 import { Pool } from 'pg'
-import type { DatabaseFilters, QueryParameterValue, RpcParams } from './types'
+import type { DatabaseFilters, DatabaseValue, QueryParameterValue, RpcParams } from './types'
 
 // 全局连接池（单例模式）
 let pool: Pool | null = null
@@ -70,6 +70,7 @@ class PostgresQueryBuilder<T = unknown> {
   private limitValue?: number
   private offsetValue?: number
   private selectColumns?: string[]
+  private isDeleteOperation = false
 
   constructor(pool: Pool, table: string) {
     this.pool = pool
@@ -96,34 +97,34 @@ class PostgresQueryBuilder<T = unknown> {
       
       if (key.endsWith('>')) {
         conditions.push(`${escapedKey} > $${paramIndex++}`)
-        values.push(value)
+        values.push(value as QueryParameterValue)
       } else if (key.endsWith('>=')) {
         conditions.push(`${escapedKey} >= $${paramIndex++}`)
-        values.push(value)
+        values.push(value as QueryParameterValue)
       } else if (key.endsWith('<')) {
         conditions.push(`${escapedKey} < $${paramIndex++}`)
-        values.push(value)
+        values.push(value as QueryParameterValue)
       } else if (key.endsWith('<=')) {
         conditions.push(`${escapedKey} <= $${paramIndex++}`)
-        values.push(value)
+        values.push(value as QueryParameterValue)
       } else if (key.endsWith('~')) {
         conditions.push(`${escapedKey} LIKE $${paramIndex++}`)
-        values.push(value)
+        values.push(value as QueryParameterValue)
       } else if (key.endsWith('~~')) {
         conditions.push(`${escapedKey} ILIKE $${paramIndex++}`)
-        values.push(value)
+        values.push(value as QueryParameterValue)
       } else if (key.endsWith('[]')) {
         conditions.push(`${escapedKey} = ANY($${paramIndex++})`)
-        values.push(value)
+        values.push(value as QueryParameterValue)
       } else if (key.endsWith('?')) {
         conditions.push(`${escapedKey} IS $${paramIndex++}`)
-        values.push(value)
+        values.push(value as QueryParameterValue)
       } else if (key.startsWith('!')) {
         conditions.push(`${escapedKey} != $${paramIndex++}`)
-        values.push(value)
+        values.push(value as QueryParameterValue)
       } else {
         conditions.push(`${escapedKey} = $${paramIndex++}`)
-        values.push(value)
+        values.push(value as QueryParameterValue)
       }
     }
 
@@ -188,12 +189,23 @@ class PostgresQueryBuilder<T = unknown> {
   }
 
   in(column: string, values: string[] | number[]): this {
-    this.filters[`${column}[]`] = values
+    this.filters[`${column}[]`] = values as DatabaseValue
     return this
   }
 
   is(column: string, value: QueryParameterValue): this {
     this.filters[`${column}?`] = value
+    return this
+  }
+
+  not(column: string, operator: string, value: QueryParameterValue): this {
+    // 实现 NOT 操作符
+    if (operator === 'is') {
+      this.filters[`!${column}?`] = value
+    } else {
+      // 其他操作符暂不支持 NOT
+      this.filters[`!${column}`] = value
+    }
     return this
   }
 
@@ -207,6 +219,11 @@ class PostgresQueryBuilder<T = unknown> {
 
   limit(count: number): this {
     this.limitValue = count
+    return this
+  }
+
+  offset(count: number): this {
+    this.offsetValue = count
     return this
   }
 
@@ -233,14 +250,66 @@ class PostgresQueryBuilder<T = unknown> {
     }
   }
 
+  async maybeSingle(): Promise<{ data: T | null; error: Error | null }> {
+    this.limitValue = 1
+    const result = await this.execute<T>()
+    // maybeSingle 与 single 相同，但如果有多条记录会返回错误
+    if (result.data && result.data.length > 1) {
+      return {
+        data: null,
+        error: new Error('Multiple rows returned'),
+      }
+    }
+    return {
+      data: result.data && result.data.length > 0 ? result.data[0] : null,
+      error: result.error,
+    }
+  }
+
+  /**
+   * 删除数据（兼容 Supabase API）
+   * 返回查询构建器以支持链式调用
+   */
+  delete(): this {
+    this.isDeleteOperation = true
+    return this
+  }
+
   async execute<TResult = T>(): Promise<{ data: TResult[] | null; error: Error | null; count?: number }> {
     try {
       const escapedTable = this.escapeIdentifier(this.table)
+      const { clause, values } = this.buildWhereClause()
+      
+      // 如果是删除操作
+      if (this.isDeleteOperation) {
+        if (!clause) {
+          // 如果没有 WHERE 子句，不允许删除所有数据（安全考虑）
+          return {
+            data: null,
+            error: new Error('Delete operation requires at least one filter condition'),
+          }
+        }
+
+        let query = `DELETE FROM ${escapedTable} ${clause} RETURNING *`
+        const queryValues = [...values]
+
+        if (this.limitValue) {
+          query += ` LIMIT $${queryValues.length + 1}`
+          queryValues.push(this.limitValue)
+        }
+
+        const result = await this.pool.query(query, queryValues)
+
+        return {
+          data: result.rows as TResult[],
+          error: null,
+        }
+      }
+      
+      // 正常的 SELECT 查询
       const selectFields = this.selectColumns
         ? this.selectColumns.map((field) => this.escapeIdentifier(field)).join(', ')
         : '*'
-      
-      const { clause, values } = this.buildWhereClause()
       const orderByClause = this.buildOrderByClause()
       
       let query = `SELECT ${selectFields} FROM ${escapedTable} ${clause} ${orderByClause}`
@@ -282,8 +351,8 @@ class PostgresQueryBuilder<T = unknown> {
   }
 
   // 支持 Promise-like 接口（兼容 Supabase）
-  async then<TResult1 = { data: T[] | null; error: Error | null }, TResult2 = never>(
-    onfulfilled?: ((value: { data: T[] | null; error: Error | null }) => TResult1 | PromiseLike<TResult1>) | null,
+  async then<TResult1 = { data: T[] | null; error: Error | null; count?: number }, TResult2 = never>(
+    onfulfilled?: ((value: { data: T[] | null; error: Error | null; count?: number }) => TResult1 | PromiseLike<TResult1>) | null,
     onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null
   ): Promise<TResult1 | TResult2> {
     const result = await this.execute<T>()

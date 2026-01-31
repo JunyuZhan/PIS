@@ -72,7 +72,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     // 验证照片存在且用户有权限访问（排除已删除的照片）
     // 查询照片（包含相册信息验证）
     const photoResult = await db
-      .from('photos')
+      .from<{ id: string; album_id: string; deleted_at: string | null }>('photos')
       .select('id, album_id, deleted_at')
       .eq('id', id)
       .is('deleted_at', null)
@@ -81,7 +81,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     // 验证相册存在且未删除
     if (photoResult.data) {
       const albumResult = await db
-        .from('albums')
+        .from<{ id: string }>('albums')
         .select('id')
         .eq('id', photoResult.data.album_id)
         .is('deleted_at', null)
@@ -125,7 +125,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     // 如果照片状态是 completed，需要重新处理图片以应用新的旋转角度
     // 注意：只处理未删除的照片
     const photoStatusResult = await dbAdmin
-      .from('photos')
+      .from<{ status: string; album_id: string; original_key: string | null; deleted_at: string | null }>('photos')
       .select('status, album_id, original_key, deleted_at')
       .eq('id', id)
       .is('deleted_at', null)

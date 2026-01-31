@@ -19,6 +19,7 @@ export default async function SettingsPage() {
     .from('albums')
     .select('*')
     .is('deleted_at', null)
+    .execute()
 
   const albumCount = albumCountResult.count || albumCountResult.data?.length || 0
 
@@ -27,6 +28,7 @@ export default async function SettingsPage() {
     .select('*')
     .eq('status', 'completed')
     .is('deleted_at', null)
+    .execute()
 
   const photoCount = photoCountResult.count || photoCountResult.data?.length || 0
 
@@ -36,6 +38,7 @@ export default async function SettingsPage() {
     .select('*')
     .eq('is_public', true)
     .is('deleted_at', null)
+    .execute()
 
   const publicAlbumCount = publicAlbumCountResult.count || publicAlbumCountResult.data?.length || 0
 
@@ -46,8 +49,9 @@ export default async function SettingsPage() {
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
     .limit(1)
+    .execute()
 
-  const recentAlbums = recentAlbumsResult.data || []
+  const recentAlbums = (recentAlbumsResult.data || []) as Array<{ created_at: string }>
 
   return (
     <div className="space-y-6">

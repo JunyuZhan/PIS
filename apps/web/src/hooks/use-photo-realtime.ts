@@ -63,7 +63,7 @@ export function usePhotoRealtime({
       const currentPhotos = data.photos || []
 
       // 检测新照片
-      const currentPhotoIds = new Set(currentPhotos.map((p: Photo) => p.id))
+      const currentPhotoIds = new Set<string>(currentPhotos.map((p: Photo) => p.id))
       const newPhotos = currentPhotos.filter((p: Photo) => !knownPhotoIdsRef.current.has(p.id))
 
       newPhotos.forEach((photo: Photo) => {
@@ -74,7 +74,7 @@ export function usePhotoRealtime({
       })
 
       // 更新已知照片ID集合
-      currentPhotoIds.forEach((id: string) => knownPhotoIdsRef.current.add(id))
+      currentPhotoIds.forEach((id) => knownPhotoIdsRef.current.add(id))
 
       // 清理已删除的照片ID
       knownPhotoIdsRef.current.forEach((id: string) => {
@@ -144,7 +144,7 @@ export function usePhotoRealtimeAdmin({
       })
 
       // 清理已删除的照片
-      const currentPhotoIds = new Set(currentPhotos.map((p: Photo) => p.id))
+      const currentPhotoIds = new Set<string>(currentPhotos.map((p: Photo) => p.id))
       photoStatusMapRef.current.forEach((_, id) => {
         if (!currentPhotoIds.has(id)) {
           photoStatusMapRef.current.delete(id)

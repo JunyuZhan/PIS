@@ -40,7 +40,6 @@ export async function PUT(request: NextRequest) {
       fileSize,
       contentType,
       workerUrl,
-      uploadUrl,
     })
 
     // 使用流式传输绕过 Vercel 的 4.5MB 请求体限制
@@ -92,7 +91,6 @@ export async function PUT(request: NextRequest) {
       console.error('[Upload Proxy] Error details:', {
         error: errorMessage,
         workerUrl,
-        uploadUrl,
         fileSize,
         key,
       })

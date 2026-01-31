@@ -94,6 +94,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     // 生成分享URL（添加错误处理）
     let shareUrl: string
     try {
+      if (!newAlbum.slug) {
+        throw new Error('Album slug is missing')
+      }
       shareUrl = getAlbumShareUrl(newAlbum.slug)
     } catch (error) {
       console.error('Failed to generate share URL:', error)

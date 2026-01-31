@@ -26,7 +26,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     // 获取相册ID
     const albumResult = await db
-      .from('albums')
+      .from<{ id: string }>('albums')
       .select('id')
       .eq('slug', slug)
       .is('deleted_at', null)
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     // 如果RPC函数不存在，使用降级方案：先查询当前值，然后更新
     if (rpcResult.error) {
       const currentAlbumResult = await db
-        .from('albums')
+        .from<{ view_count: number | null }>('albums')
         .select('view_count')
         .eq('id', album.id)
         .single()
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     } else {
       // RPC成功，查询更新后的值
       const updatedAlbumResult = await db
-        .from('albums')
+        .from<{ view_count: number | null }>('albums')
         .select('view_count')
         .eq('id', album.id)
         .single()
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       if (slugValidation.success) {
         const db = await createClient()
         const albumResult = await db
-          .from('albums')
+          .from<{ view_count: number | null }>('albums')
           .select('view_count')
           .eq('slug', slugValidation.data.slug)
           .is('deleted_at', null)

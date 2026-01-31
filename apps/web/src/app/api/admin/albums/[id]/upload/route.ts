@@ -122,6 +122,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // 验证相册存在
+    const db = await createClient()
     const albumResult = await db
       .from('albums')
       .select('id')
@@ -303,7 +304,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         }
         
         try {
-          await adminClient.from('photos').delete().eq('id', photoId)
+          await adminClient.delete('photos', { id: photoId })
         } catch (cleanupError) {
           console.error('[Upload API] Failed to cleanup photo record:', cleanupError)
         }
@@ -361,7 +362,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         })
         
         try {
-          await adminClient.from('photos').delete().eq('id', photoId)
+          await adminClient.delete('photos', { id: photoId })
         } catch (cleanupError) {
           console.error('[Upload API] Failed to cleanup photo record:', cleanupError)
         }
@@ -393,7 +394,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         console.error('[Upload API] Presigned URL is missing in response')
         
         try {
-          await adminClient.from('photos').delete().eq('id', photoId)
+          await adminClient.delete('photos', { id: photoId })
         } catch (cleanupError) {
           console.error('[Upload API] Failed to cleanup photo record:', cleanupError)
         }
@@ -426,7 +427,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       }
       
       try {
-        await adminClient.from('photos').delete().eq('id', photoId)
+        await adminClient.delete('photos', { id: photoId })
       } catch (cleanupError) {
         console.error('[Upload API] Failed to cleanup photo record:', cleanupError)
       }
@@ -455,8 +456,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     if (photoId) {
       Promise.resolve().then(async () => {
         try {
-          const adminClient = createAdminClient()
-          await adminClient.from('photos').delete().eq('id', photoId)
+          const adminClient = await createAdminClient()
+          await adminClient.delete('photos', { id: photoId })
         } catch (cleanupError) {
           console.error('[Upload API] Failed to cleanup photo record:', cleanupError)
         }

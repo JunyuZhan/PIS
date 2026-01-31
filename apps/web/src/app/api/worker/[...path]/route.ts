@@ -202,7 +202,6 @@ async function proxyRequest(
           { error: { code: 'UNAUTHORIZED', message: '请先登录' } },
           { 
             status: 401,
-            headers: response.headers,
           }
         )
       }

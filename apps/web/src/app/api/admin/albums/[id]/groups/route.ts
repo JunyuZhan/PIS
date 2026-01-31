@@ -60,15 +60,16 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return handleError(groupsResult.error, '查询分组列表失败')
     }
 
-    const groups = groupsResult.data || []
+    const groups = (groupsResult.data || []) as Array<{ id: string }>
 
     // 获取每个分组的照片数量
     const groupsWithCounts = await Promise.all(
-      groups.map(async (group: { id: string }) => {
+      groups.map(async (group) => {
         const countResult = await db
           .from('photo_group_assignments')
           .select('*')
           .eq('group_id', group.id)
+          .execute()
 
         const count = countResult.count || countResult.data?.length || 0
 

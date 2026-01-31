@@ -167,7 +167,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     // 获取相册信息（包含密码）
     const albumResult = await db
-      .from('albums')
+      .from<{ id: string; password: string | null; expires_at: string | null; deleted_at: string | null }>('albums')
       .select('id, password, expires_at, deleted_at')
       .eq('slug', slug)
       .single()

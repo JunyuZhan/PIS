@@ -30,11 +30,11 @@ export async function createClient(): Promise<DatabaseClient> {
   
   if (dbType === 'postgresql') {
     const { createPostgreSQLClient } = await import('./postgresql-client')
-    return createPostgreSQLClient()
+    return createPostgreSQLClient() as unknown as DatabaseClient
   } else {
     // Supabase 模式（向后兼容）
     const { createClient: createSupabaseClient } = await import('../supabase/server')
-    return createSupabaseClient()
+    return (await createSupabaseClient()) as unknown as DatabaseClient
   }
 }
 
@@ -51,11 +51,11 @@ export async function createClientFromRequest(
   
   if (dbType === 'postgresql') {
     const { createPostgreSQLClient } = await import('./postgresql-client')
-    return createPostgreSQLClient()
+    return createPostgreSQLClient() as unknown as DatabaseClient
   } else {
     // Supabase 模式（向后兼容）
     const { createClientFromRequest: createSupabaseClientFromRequest } = await import('../supabase/server')
-    return createSupabaseClientFromRequest(request, response)
+    return createSupabaseClientFromRequest(request, response) as unknown as DatabaseClient
   }
 }
 
@@ -67,10 +67,10 @@ export async function createAdminClient(): Promise<DatabaseClient> {
   
   if (dbType === 'postgresql') {
     const { createPostgreSQLAdminClient } = await import('./postgresql-client')
-    return createPostgreSQLAdminClient()
+    return createPostgreSQLAdminClient() as unknown as DatabaseClient
   } else {
     // Supabase 模式（向后兼容）
     const { createAdminClient: createSupabaseAdminClient } = await import('../supabase/server')
-    return createSupabaseAdminClient()
+    return (await createSupabaseAdminClient()) as unknown as DatabaseClient
   }
 }

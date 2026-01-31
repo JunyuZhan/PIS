@@ -45,7 +45,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     // 获取相册信息（使用 slug）
     const albumResult = await db
-      .from('albums')
+      .from<{ id: string; is_public: boolean; deleted_at: string | null; expires_at: string | null }>('albums')
       .select('id, is_public, deleted_at, expires_at')
       .eq('slug', slug)
       .single()

@@ -55,10 +55,11 @@ export interface QueryBuilder<T = unknown> {
   range(from: number, to: number): this
   single(): Promise<{ data: T | null; error: Error | null }>
   maybeSingle(): Promise<{ data: T | null; error: Error | null }>
+  delete(): this
   execute<TResult = T>(): Promise<{ data: TResult[] | null; error: Error | null; count?: number }>
   // Promise-like 接口（兼容 Supabase）
-  then<TResult1 = { data: T[] | null; error: Error | null }, TResult2 = never>(
-    onfulfilled?: ((value: { data: T[] | null; error: Error | null }) => TResult1 | PromiseLike<TResult1>) | null,
+  then<TResult1 = { data: T[] | null; error: Error | null; count?: number }, TResult2 = never>(
+    onfulfilled?: ((value: { data: T[] | null; error: Error | null; count?: number }) => TResult1 | PromiseLike<TResult1>) | null,
     onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null
   ): Promise<TResult1 | TResult2>
 }

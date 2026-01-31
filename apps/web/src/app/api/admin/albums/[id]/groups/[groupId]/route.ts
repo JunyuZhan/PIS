@@ -66,6 +66,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .from('photo_group_assignments')
       .select('*')
       .eq('group_id', groupId)
+      .execute()
 
     const count = countResult.count || countResult.data?.length || 0
 
@@ -178,6 +179,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       .from('photo_group_assignments')
       .select('*')
       .eq('group_id', groupId)
+      .execute()
 
     const count = countResult.count || countResult.data?.length || 0
 

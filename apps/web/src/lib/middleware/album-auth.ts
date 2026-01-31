@@ -49,7 +49,7 @@ export async function verifyAlbumAuth(
 
     // Get album info
     const albumResult = await db
-      .from("albums")
+      .from<{ id: string; slug: string; password: string | null; expires_at: string | null; deleted_at: string | null }>("albums")
       .select("id, slug, password, expires_at, deleted_at")
       .eq("slug", slug)
       .single();

@@ -87,7 +87,7 @@ export async function PATCH(request: NextRequest) {
 
     // 先验证所有照片都属于该相册
     const photosResult = await db
-      .from('photos')
+      .from<{ id: string }>('photos')
       .select('id')
       .eq('album_id', albumId)
       .in('id', photoIds)
@@ -96,7 +96,7 @@ export async function PATCH(request: NextRequest) {
       return handleError(photosResult.error, '查询照片失败')
     }
 
-    const validPhotoIds = new Set(photosResult.data?.map((p: { id: string }) => p.id) || [])
+    const validPhotoIds = new Set(photosResult.data?.map((p) => p.id) || [])
     const invalidIds = photoIds.filter((id) => !validPhotoIds.has(id))
 
     if (invalidIds.length > 0) {
