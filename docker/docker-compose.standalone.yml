@@ -14,10 +14,14 @@ version: '3.8'
 # - Nginx: 反向代理
 #
 # 端口说明：
-# - 80/443: Nginx (HTTP/HTTPS)
-# - 5432: PostgreSQL (仅本地)
-# - 9000: MinIO API (仅本地)
-# - 9001: MinIO Console (仅本地)
+# - 8081: Nginx (唯一对外暴露端口，所有服务通过路径访问)
+#   - / : Next.js 前端应用
+#   - /api/ : Next.js API
+#   - /media/ : MinIO 媒体文件
+#   - /minio-console/ : MinIO 管理控制台
+#   - /worker-api/ : Worker API（可选，建议限制访问）
+#   - /health : 健康检查
+# 其他服务（PostgreSQL、MinIO、Redis）仅容器内访问，不暴露端口
 # ============================================
 
 networks:
@@ -59,8 +63,7 @@ services:
       - pis_postgres_data:/var/lib/postgresql/data
       # 数据库初始化脚本（如果需要）
       - ./init-postgresql-db.sql:/docker-entrypoint-initdb.d/init-postgresql-db.sql:ro
-    ports:
-      - "127.0.0.1:5432:5432"
+    # 不暴露端口，仅容器内访问（通过 nginx 路径访问管理界面）
     restart: unless-stopped
     networks:
       - pis-network
@@ -82,9 +85,7 @@ services:
     volumes:
       - pis_minio_data:/data
     command: server /data --console-address ":9001"
-    ports:
-      - "127.0.0.1:19000:9000"  # API
-      - "127.0.0.1:19001:9001"  # 控制台
+    # 不暴露端口，通过 nginx /minio-console/ 路径访问控制台
     restart: unless-stopped
     networks:
       - pis-network
@@ -131,8 +132,7 @@ services:
     volumes:
       - pis_redis_data:/data
     command: redis-server --appendonly yes
-    ports:
-      - "127.0.0.1:6379:6379"
+    # 不暴露端口，仅容器内访问
     restart: unless-stopped
     networks:
       - pis-network
@@ -284,7 +284,9 @@ services:
       - pis_nginx_logs:/var/log/nginx
       - pis_certs:/etc/letsencrypt:ro
     ports:
-      - "8080:80"    # HTTP 使用 8080（配合 frpc/ddnsto 内网穿透）
+      # 唯一对外暴露端口，所有服务通过路径访问
+      # 如需修改端口避免冲突，请同时更新 nginx 配置中的 listen 端口
+      - "8081:80"    # HTTP 使用 8081（可根据服务器实际情况修改）
       # HTTPS 由内网穿透服务处理，不需要暴露 443
       # - "443:443"
     depends_on:
