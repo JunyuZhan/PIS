@@ -93,12 +93,12 @@ export default async function AlbumDetailPage({ params }: AlbumDetailPageProps) 
       .eq('id', album.cover_photo_id)
       .single()
     
-    const coverPhoto = coverPhotoResult.data
+    const coverPhoto = coverPhotoResult.data as { preview_key: string | null; thumb_key: string | null } | null
     
-    if (coverPhoto && coverPhoto.preview_key) {
+    if (coverPhoto?.preview_key) {
       const mediaUrl = process.env.NEXT_PUBLIC_MEDIA_URL || 'http://localhost:9000/pis-photos'
       backgroundImageUrl = `${mediaUrl}/${coverPhoto.preview_key}`
-    } else if (coverPhoto && coverPhoto.thumb_key) {
+    } else if (coverPhoto?.thumb_key) {
       const mediaUrl = process.env.NEXT_PUBLIC_MEDIA_URL || 'http://localhost:9000/pis-photos'
       backgroundImageUrl = `${mediaUrl}/${coverPhoto.thumb_key}`
     }

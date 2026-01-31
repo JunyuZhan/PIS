@@ -65,11 +65,11 @@ export async function generateMetadata({ params }: AlbumPageProps): Promise<Meta
       .eq('id', album.cover_photo_id)
       .single()
     
-    const coverPhoto = coverPhotoResult.data
+    const coverPhoto = coverPhotoResult.data as { preview_key: string | null; thumb_key: string | null } | null
     
-    if (coverPhoto && coverPhoto.preview_key) {
+    if (coverPhoto?.preview_key) {
       shareImage = `${mediaUrl}/${coverPhoto.preview_key}`
-    } else if (coverPhoto && coverPhoto.thumb_key) {
+    } else if (coverPhoto?.thumb_key) {
       shareImage = `${mediaUrl}/${coverPhoto.thumb_key}`
     }
   }
@@ -259,9 +259,9 @@ export default async function AlbumPage({ params, searchParams }: AlbumPageProps
   let backgroundImageUrl: string | null = null
   if (album.poster_image_url && album.poster_image_url.trim()) {
     backgroundImageUrl = album.poster_image_url.trim()
-  } else if (coverPhoto && coverPhoto.preview_key) {
+  } else if (coverPhoto?.preview_key) {
     backgroundImageUrl = `${mediaUrl}/${coverPhoto.preview_key}`
-  } else if (coverPhoto && coverPhoto.thumb_key) {
+  } else if (coverPhoto?.thumb_key) {
     backgroundImageUrl = `${mediaUrl}/${coverPhoto.thumb_key}`
   }
 
