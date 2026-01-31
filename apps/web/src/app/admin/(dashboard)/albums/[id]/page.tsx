@@ -95,10 +95,10 @@ export default async function AlbumDetailPage({ params }: AlbumDetailPageProps) 
     
     const coverPhoto = coverPhotoResult.data
     
-    if (coverPhoto?.preview_key) {
+    if (coverPhoto && coverPhoto.preview_key) {
       const mediaUrl = process.env.NEXT_PUBLIC_MEDIA_URL || 'http://localhost:9000/pis-photos'
       backgroundImageUrl = `${mediaUrl}/${coverPhoto.preview_key}`
-    } else if (coverPhoto?.thumb_key) {
+    } else if (coverPhoto && coverPhoto.thumb_key) {
       const mediaUrl = process.env.NEXT_PUBLIC_MEDIA_URL || 'http://localhost:9000/pis-photos'
       backgroundImageUrl = `${mediaUrl}/${coverPhoto.thumb_key}`
     }
