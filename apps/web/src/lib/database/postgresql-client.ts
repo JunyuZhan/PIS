@@ -325,7 +325,13 @@ class PostgresQueryBuilder<T = unknown> {
       
       // 正常的 SELECT 查询
       const selectFields = this.selectColumns
-        ? this.selectColumns.map((field) => this.escapeIdentifier(field)).join(', ')
+        ? this.selectColumns
+            .map((field) => {
+              // 如果是通配符 *，直接返回，不转义
+              if (field === '*') return '*'
+              return this.escapeIdentifier(field)
+            })
+            .join(', ')
         : '*'
       const orderByClause = this.buildOrderByClause()
       
