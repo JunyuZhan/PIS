@@ -83,8 +83,8 @@ services:
       - pis_minio_data:/data
     command: server /data --console-address ":9001"
     ports:
-      - "127.0.0.1:9000:9000"  # API
-      - "127.0.0.1:9001:9001"  # 控制台
+      - "127.0.0.1:19000:9000"  # API
+      - "127.0.0.1:19001:9001"  # 控制台
     restart: unless-stopped
     networks:
       - pis-network
