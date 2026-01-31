@@ -102,7 +102,7 @@ generate_secret() {
 
 # 检查 Docker
 check_docker() {
-    print_step "1/9" "检查 Docker 环境"
+    print_step "1/11" "检查 Docker 环境"
 
     if ! command -v docker &> /dev/null; then
         print_error "Docker 未安装"
@@ -128,7 +128,7 @@ check_docker() {
 
 # 配置部署模式
 configure_deployment_mode() {
-    print_step "2/9" "部署架构配置"
+    print_step "2/11" "部署架构配置"
 
     echo ""
     echo -e "${BOLD}请选择部署架构：${NC}"
@@ -169,7 +169,7 @@ configure_deployment_mode() {
 
 # 获取域名配置
 configure_domain() {
-    print_step "3/9" "配置域名"
+    print_step "3/11" "配置域名"
 
     echo ""
     echo -e "${YELLOW}请输入你的域名（不带 http:// 或 https://）${NC}"
@@ -200,7 +200,7 @@ configure_domain() {
 
 # 配置 PostgreSQL（完全自托管模式）
 configure_postgresql() {
-    print_step "4a/9" "配置 PostgreSQL 数据库"
+    print_step "4/11" "配置 PostgreSQL 数据库"
 
     echo ""
     echo -e "${CYAN}PostgreSQL 数据库配置${NC}"
@@ -239,7 +239,7 @@ configure_postgresql() {
 
 # 配置 Supabase（混合部署）
 configure_supabase() {
-    print_step "4a/9" "配置 Supabase"
+    print_step "4/11" "配置 Supabase"
 
     echo ""
     echo -e "${CYAN}请按照以下步骤配置 Supabase:${NC}"
@@ -273,7 +273,7 @@ configure_supabase() {
 
 # 配置 MinIO
 configure_minio() {
-    print_step "5/9" "配置 MinIO 对象存储"
+    print_step "5/11" "配置 MinIO 对象存储"
 
     echo ""
     echo -e "${CYAN}MinIO 将用于存储照片文件${NC}"
@@ -298,7 +298,7 @@ configure_minio() {
 
 # 配置 Worker
 configure_worker() {
-    print_step "6/9" "配置 Worker API"
+    print_step "6/11" "配置 Worker API"
 
     WORKER_API_KEY=$(get_input "Worker API 密钥 (留空自动生成)" "")
     if [ -z "$WORKER_API_KEY" ]; then
@@ -311,7 +311,7 @@ configure_worker() {
 
 # 配置安全密钥
 configure_security() {
-    print_step "7/9" "配置安全密钥"
+    print_step "7/11" "配置安全密钥"
 
     ALBUM_SESSION_SECRET=$(get_input "相册会话密钥 (留空自动生成)" "")
     if [ -z "$ALBUM_SESSION_SECRET" ]; then
@@ -324,7 +324,7 @@ configure_security() {
 
 # 配置告警（可选）
 configure_alerts() {
-    print_step "8/9" "配置告警服务（可选）"
+    print_step "8/11" "配置告警服务（可选）"
 
     echo ""
     echo -e "${YELLOW}是否需要配置告警通知？${NC}"
@@ -387,7 +387,7 @@ configure_alerts() {
 
 # 生成配置文件
 generate_config() {
-    print_step "9/9" "生成配置并部署"
+    print_step "9/11" "生成配置并部署"
 
     local env_file=".env.generated"
 
@@ -519,8 +519,9 @@ EOF
             echo "  b. 手动初始化（外部数据库）:"
             echo "     $ psql -U $DATABASE_USER -d $DATABASE_NAME -f docker/init-postgresql-db.sql"
             echo ""
-            echo "  c. 创建管理员账号（数据库初始化后）:"
-            echo "     $ pnpm create-admin"
+            echo "  c. 创建管理员账号:"
+            echo "     - ✅ 部署脚本会自动引导创建（推荐）"
+            echo "     - 或手动执行: pnpm create-admin"
             echo ""
             echo -e "${GREEN}4. 配置 Nginx 和 SSL${NC}"
             echo ""
@@ -605,17 +606,140 @@ show_completion_info() {
     echo -e "${GREEN}✓ 配置文件已生成${NC}"
     echo -e "${GREEN}✓ 服务已启动${NC}"
     echo ""
-    echo -e "${YELLOW}配置文件位置:${NC}"
+    
+    # 显示各服务登录信息
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
+    echo -e "${CYAN}  服务访问信息${NC}"
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
+    echo ""
+    
+    # Web 管理后台
+    echo -e "${BOLD}1. Web 管理后台${NC}"
+    if [ "$DEPLOYMENT_MODE" = "standalone" ]; then
+        if [ "$DOMAIN" != "localhost" ]; then
+            echo "   访问地址: https://$DOMAIN/admin/login"
+        fi
+        echo "   访问地址: http://localhost:8081/admin/login"
+        if [ -n "$ADMIN_EMAIL" ] && [ -n "$ADMIN_PASSWORD" ]; then
+            echo "   登录邮箱: $ADMIN_EMAIL"
+            echo "   登录密码: $ADMIN_PASSWORD"
+        else
+            echo -e "   ${YELLOW}⚠️  请使用 'pnpm create-admin' 创建管理员账号${NC}"
+        fi
+    else
+        echo "   访问地址: https://$DOMAIN/admin/login"
+        echo -e "   ${YELLOW}⚠️  请在 Supabase Dashboard 中创建管理员账号${NC}"
+    fi
+    echo ""
+    
+    # MinIO Console
+    echo -e "${BOLD}2. MinIO 对象存储控制台${NC}"
+    if [ "$DEPLOYMENT_MODE" = "standalone" ]; then
+        if [ "$DOMAIN" != "localhost" ]; then
+            echo "   访问地址: https://$DOMAIN/minio-console/"
+        fi
+        echo "   访问地址: http://localhost:8081/minio-console/"
+    else
+        echo "   访问地址: http://localhost:19001"
+    fi
+    echo "   登录用户名: $MINIO_ACCESS_KEY"
+    echo "   登录密码: $MINIO_SECRET_KEY"
+    echo ""
+    
+    # PostgreSQL（仅 standalone 模式）
+    if [ "$DEPLOYMENT_MODE" = "standalone" ]; then
+        echo -e "${BOLD}3. PostgreSQL 数据库${NC}"
+        echo "   容器内连接:"
+        echo "     主机: postgres"
+        echo "     端口: ${DATABASE_PORT:-5432}"
+        echo "     数据库: ${DATABASE_NAME:-pis}"
+        echo "     用户: ${DATABASE_USER:-pis}"
+        echo "     密码: $DATABASE_PASSWORD"
+        echo ""
+        echo "   宿主机连接:"
+        echo "     主机: localhost"
+        echo "     端口: ${DATABASE_PORT:-5432}"
+        echo "     数据库: ${DATABASE_NAME:-pis}"
+        echo "     用户: ${DATABASE_USER:-pis}"
+        echo "     密码: $DATABASE_PASSWORD"
+        echo ""
+        echo "   连接命令:"
+        echo "     docker exec -it pis-postgres psql -U ${DATABASE_USER:-pis} -d ${DATABASE_NAME:-pis}"
+        echo "     或: psql -h localhost -p ${DATABASE_PORT:-5432} -U ${DATABASE_USER:-pis} -d ${DATABASE_NAME:-pis}"
+        echo ""
+    fi
+    
+    # Redis
+    echo -e "${BOLD}$([ "$DEPLOYMENT_MODE" = "standalone" ] && echo "4" || echo "3"). Redis 缓存${NC}"
+    if [ "$DEPLOYMENT_MODE" = "standalone" ]; then
+        echo "   容器内连接:"
+        echo "     主机: redis"
+        echo "     端口: 6379"
+        echo ""
+        echo "   宿主机连接（仅本地）:"
+        echo "     主机: localhost"
+        echo "     端口: 6379"
+        echo ""
+        echo "   连接命令:"
+        echo "     docker exec -it pis-redis redis-cli"
+    else
+        echo "   容器内连接:"
+        echo "     主机: redis"
+        echo "     端口: 6379"
+        echo ""
+        echo "   宿主机连接（仅本地）:"
+        echo "     主机: localhost"
+        echo "     端口: 16379"
+        echo ""
+        echo "   连接命令:"
+        echo "     docker exec -it pis-redis redis-cli"
+        echo "     或: redis-cli -h localhost -p 16379"
+    fi
+    echo ""
+    
+    # Worker API
+    echo -e "${BOLD}$([ "$DEPLOYMENT_MODE" = "standalone" ] && echo "5" || echo "4"). Worker API${NC}"
+    if [ "$DEPLOYMENT_MODE" = "standalone" ]; then
+        if [ "$DOMAIN" != "localhost" ]; then
+            echo "   访问地址: https://$DOMAIN/worker-api/"
+        fi
+        echo "   访问地址: http://localhost:8081/worker-api/"
+    else
+        echo "   访问地址: http://localhost:3001"
+    fi
+    echo "   API Key: $WORKER_API_KEY"
+    echo ""
+    
+    # 配置文件位置
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
+    echo -e "${CYAN}  配置文件位置${NC}"
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
+    echo ""
     echo "  - .env"
     echo "  - .deployment-info"
     echo ""
-    echo -e "${YELLOW}常用命令:${NC}"
+    echo -e "${YELLOW}⚠️  请妥善保管以上登录信息，不要泄露给他人！${NC}"
+    echo ""
+    
+    # 常用命令
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
+    echo -e "${CYAN}  常用命令${NC}"
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
+    echo ""
     echo "  查看状态: cd $DOCKER_DIR && $COMPOSE_CMD ps"
     echo "  查看日志: cd $DOCKER_DIR && $COMPOSE_CMD logs -f"
     echo "  重启服务: cd $DOCKER_DIR && $COMPOSE_CMD restart"
     echo "  停止服务: cd $DOCKER_DIR && $COMPOSE_CMD down"
     echo ""
+    
+    if [ "$DEPLOYMENT_MODE" = "standalone" ]; then
+        echo "  创建管理员: pnpm create-admin"
+        echo "  查看数据库: docker exec -it pis-postgres psql -U ${DATABASE_USER:-pis} -d ${DATABASE_NAME:-pis}"
+        echo ""
+    fi
+    
     echo -e "${CYAN}如需重新配置，请运行: bash docker/deploy.sh${NC}"
+    echo ""
 }
 
 # 检查并初始化数据库（仅 Docker 内数据库）
@@ -626,7 +750,7 @@ check_and_init_database() {
     
     # 检查是否使用 Docker 内的数据库
     if [ "$DATABASE_HOST" = "localhost" ] || [ "$DATABASE_HOST" = "127.0.0.1" ] || [ "$DATABASE_HOST" = "postgres" ]; then
-        print_step "10/10" "检查数据库初始化状态"
+        print_step "10/11" "检查数据库初始化状态"
         
         echo ""
         echo -e "${CYAN}检查数据库是否已初始化...${NC}"
@@ -661,6 +785,155 @@ check_and_init_database() {
         else
             print_warning "PostgreSQL 容器未运行，将在启动时自动初始化"
         fi
+    fi
+}
+
+# 创建管理员账号（自动化）
+create_admin_account() {
+    if [ "$DEPLOYMENT_MODE" != "standalone" ]; then
+        return 0
+    fi
+    
+    print_step "11/11" "创建管理员账号"
+    
+    echo ""
+    echo -e "${CYAN}需要创建管理员账号才能访问管理后台${NC}"
+    echo ""
+    
+    # 检查是否已有管理员账号
+    local admin_exists=false
+    if docker ps | grep -q "pis-postgres"; then
+        local admin_count=$(docker exec pis-postgres psql -U "$DATABASE_USER" -d "$DATABASE_NAME" -tAc "SELECT COUNT(*) FROM users WHERE role = 'admin';" 2>/dev/null || echo "0")
+        if [ "$admin_count" -gt 0 ] 2>/dev/null; then
+            admin_exists=true
+            echo -e "${GREEN}✓ 检测到已有管理员账号（$admin_count 个）${NC}"
+            echo ""
+            if ! get_confirm "是否创建新的管理员账号？" "n"; then
+                print_success "跳过创建管理员账号"
+                return 0
+            fi
+        fi
+    fi
+    
+    if [ "$admin_exists" = false ]; then
+        echo -e "${YELLOW}⚠️  首次部署必须创建管理员账号${NC}"
+        echo ""
+    fi
+    
+    # 获取管理员邮箱和密码（全局变量，供 show_completion_info 使用）
+    ADMIN_EMAIL=$(get_input "管理员邮箱" "admin@example.com")
+    ADMIN_PASSWORD=$(get_input "管理员密码（至少 8 个字符）" "")
+    
+    # 导出变量以便在其他函数中使用
+    export ADMIN_EMAIL ADMIN_PASSWORD
+    
+    if [ -z "$ADMIN_PASSWORD" ]; then
+        ADMIN_PASSWORD=$(generate_secret | cut -c1-16)
+        echo -e "${GREEN}✓ 已自动生成密码: ${ADMIN_PASSWORD}${NC}"
+        echo -e "${YELLOW}⚠️  请妥善保管此密码！${NC}"
+    fi
+    
+    # 验证密码长度
+    if [ ${#ADMIN_PASSWORD} -lt 8 ]; then
+        print_error "密码至少需要 8 个字符"
+        exit 1
+    fi
+    
+    echo ""
+    echo -e "${CYAN}正在创建管理员账号...${NC}"
+    
+    # 等待 Web 容器启动
+    local max_attempts=30
+    local attempt=0
+    while [ $attempt -lt $max_attempts ]; do
+        if docker ps | grep -q "pis-web.*Up"; then
+            break
+        fi
+        echo "等待 Web 容器启动... ($attempt/$max_attempts)"
+        sleep 2
+        attempt=$((attempt + 1))
+    done
+    
+    if [ $attempt -eq $max_attempts ]; then
+        print_warning "Web 容器启动超时，将在宿主机执行创建脚本"
+        create_admin_on_host
+        return 0
+    fi
+    
+    # 在 Web 容器内执行创建管理员脚本（使用 Docker 内部网络）
+    echo "在 Web 容器内创建管理员账号..."
+    if docker exec pis-web sh -c "cd /app && DATABASE_HOST=postgres DATABASE_PORT=5432 DATABASE_NAME=${DATABASE_NAME:-pis} DATABASE_USER=${DATABASE_USER:-pis} DATABASE_PASSWORD=${DATABASE_PASSWORD:-changeme} pnpm exec tsx scripts/create-admin.ts '$ADMIN_EMAIL' '$ADMIN_PASSWORD'" 2>&1; then
+        print_success "管理员账号创建成功！"
+        echo ""
+        echo -e "${GREEN}═══════════════════════════════════════${NC}"
+        echo -e "${GREEN}  管理员账号信息${NC}"
+        echo -e "${GREEN}═══════════════════════════════════════${NC}"
+        echo ""
+        echo -e "${BOLD}邮箱:${NC} $ADMIN_EMAIL"
+        echo -e "${BOLD}密码:${NC} $ADMIN_PASSWORD"
+        echo ""
+        echo -e "${YELLOW}⚠️  请妥善保管以上信息！${NC}"
+        echo ""
+        echo -e "${CYAN}登录地址：${NC}"
+        if [ "$DOMAIN" != "localhost" ]; then
+            echo "  https://$DOMAIN/admin/login"
+        fi
+        echo "  http://localhost:8081/admin/login"
+        echo ""
+    else
+        print_warning "在容器内创建失败，尝试在宿主机执行..."
+        create_admin_on_host
+    fi
+}
+
+# 在宿主机创建管理员账号（回退方案）
+create_admin_on_host() {
+    echo ""
+    echo -e "${YELLOW}Web 容器未运行，尝试在宿主机执行...${NC}"
+    
+    # 检查是否能访问数据库
+    if [ "$DATABASE_HOST" = "postgres" ] || [ "$DATABASE_HOST" = "localhost" ] || [ "$DATABASE_HOST" = "127.0.0.1" ]; then
+        # 使用 Docker 网络地址
+        local db_host="postgres"
+        if ! docker ps | grep -q "pis-postgres"; then
+            db_host="localhost"
+        fi
+    else
+        db_host="$DATABASE_HOST"
+    fi
+    
+    # 临时修改环境变量以连接数据库
+    export DATABASE_HOST="$db_host"
+    export DATABASE_PORT="${DATABASE_PORT:-5432}"
+    export DATABASE_NAME="${DATABASE_NAME:-pis}"
+    export DATABASE_USER="${DATABASE_USER:-pis}"
+    export DATABASE_PASSWORD="${DATABASE_PASSWORD:-changeme}"
+    
+    # 在项目根目录执行脚本
+    if [ -f "$PROJECT_ROOT/scripts/create-admin.ts" ]; then
+        if cd "$PROJECT_ROOT" && pnpm exec tsx scripts/create-admin.ts "$ADMIN_EMAIL" "$ADMIN_PASSWORD" 2>/dev/null; then
+            print_success "管理员账号创建成功！"
+            echo ""
+            echo -e "${GREEN}管理员信息：${NC}"
+            echo "  邮箱: $ADMIN_EMAIL"
+            echo "  密码: $ADMIN_PASSWORD"
+            echo ""
+            echo -e "${CYAN}登录地址：${NC}"
+            echo "  http://$DOMAIN/admin/login"
+            echo "  或 http://localhost:8081/admin/login"
+        else
+            print_error "创建管理员账号失败"
+            echo ""
+            echo -e "${YELLOW}请手动创建管理员账号：${NC}"
+            echo "  1. 启动所有服务后执行："
+            echo "     $ cd $PROJECT_ROOT"
+            echo "     $ pnpm create-admin"
+            echo ""
+            echo "  2. 或使用 Docker 容器执行："
+            echo "     $ docker exec -it pis-web pnpm create-admin"
+        fi
+    else
+        print_error "找不到创建管理员脚本"
     fi
 }
 
@@ -699,8 +972,46 @@ main() {
     configure_alerts
     generate_config
     
-    # 检查并初始化数据库
-    check_and_init_database
+    # 启动服务（在 standalone 模式下）
+    if [ "$DEPLOYMENT_MODE" = "standalone" ]; then
+        echo ""
+        print_step "10/11" "启动服务"
+        echo ""
+        echo -e "${CYAN}正在启动 Docker 服务...${NC}"
+        
+        cd "$DOCKER_DIR"
+        if $COMPOSE_CMD -f docker-compose.standalone.yml up -d 2>&1 | tee /tmp/docker-startup.log; then
+            print_success "服务启动成功"
+        else
+            print_error "服务启动失败，请检查日志"
+            exit 1
+        fi
+        
+        # 等待服务就绪
+        echo ""
+        echo -e "${CYAN}等待服务就绪...${NC}"
+        sleep 10
+        
+        # 检查并初始化数据库
+        check_and_init_database
+        
+        # 创建管理员账号（自动化）
+        create_admin_account
+    else
+        # 混合部署模式：只启动基础服务
+        echo ""
+        print_step "10/11" "启动基础服务"
+        echo ""
+        echo -e "${CYAN}正在启动 Docker 基础服务...${NC}"
+        
+        cd "$DOCKER_DIR"
+        if $COMPOSE_CMD up -d 2>&1 | tee /tmp/docker-startup.log; then
+            print_success "基础服务启动成功"
+        else
+            print_error "服务启动失败，请检查日志"
+            exit 1
+        fi
+    fi
     
     show_completion_info
 }
