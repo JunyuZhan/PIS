@@ -191,12 +191,13 @@ services:
       # STORAGE_PUBLIC_URL: 用于读取文件（通过 Next.js 代理）
       # 注意：如果 DOMAIN 是 localhost，使用 http://localhost:8081/media
       # 如果 DOMAIN 是公网域名，使用 https://${DOMAIN}/media
-      - STORAGE_PUBLIC_URL=${STORAGE_PUBLIC_URL:-${DOMAIN:-localhost}:8081/media}
+      # 优先使用 .env 文件中的值，如果没有则使用默认值
+      - STORAGE_PUBLIC_URL=${STORAGE_PUBLIC_URL}
       # MINIO_PUBLIC_URL: 在 standalone 模式下，应使用与 STORAGE_PUBLIC_URL 相同的值（通过 /media/ 代理）
       # 注意：presigned URL 实际上不能通过代理使用，但这里设置为相同值以避免 CSP 错误
       # 实际上，上传应该通过 Next.js API 代理，而不是直接使用 presigned URL
-      # 如果 DOMAIN 是公网域名，自动使用 HTTPS；如果是 localhost，使用 HTTP
-      - MINIO_PUBLIC_URL=${MINIO_PUBLIC_URL:-${STORAGE_PUBLIC_URL:-${DOMAIN:-localhost}:8081/media}}
+      # 优先使用 .env 文件中的值，如果没有则使用 STORAGE_PUBLIC_URL 或默认值
+      - MINIO_PUBLIC_URL=${MINIO_PUBLIC_URL}
       # 告警配置
       - ALERT_ENABLED=${ALERT_ENABLED:-true}
       - ALERT_TYPE=${ALERT_TYPE:-log}
