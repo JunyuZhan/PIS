@@ -143,6 +143,35 @@ const nextConfig: NextConfig = {
       }
     }
     
+    // 从 STORAGE_PUBLIC_URL 或 MINIO_PUBLIC_URL 获取 presigned URL 使用的地址
+    // 这些 URL 可能不同于 NEXT_PUBLIC_MEDIA_URL（用于读取文件）
+    const storagePublicUrl = process.env.STORAGE_PUBLIC_URL || process.env.MINIO_PUBLIC_URL
+    if (storagePublicUrl && !mediaOrigins.some(origin => storagePublicUrl.includes(origin))) {
+      try {
+        const storageUrl = new URL(storagePublicUrl)
+        const hostname = storageUrl.hostname
+        const port = storageUrl.port
+        // 添加 presigned URL 使用的地址（可能包括 localhost）
+        if (port) {
+          const storageOrigin = `${storageUrl.protocol}//${hostname}:${port}`
+          if (!mediaOrigins.includes(storageOrigin)) {
+            mediaOrigins.push(storageOrigin)
+          }
+        } else {
+          const storageOriginHttp = `http://${hostname}`
+          const storageOriginHttps = `https://${hostname}`
+          if (!mediaOrigins.includes(storageOriginHttp)) {
+            mediaOrigins.push(storageOriginHttp)
+          }
+          if (!mediaOrigins.includes(storageOriginHttps)) {
+            mediaOrigins.push(storageOriginHttps)
+          }
+        }
+      } catch {
+        // 忽略解析错误
+      }
+    }
+    
     // 从环境变量获取 Supabase URL，用于 WebSocket 连接（向后兼容，仅在混合模式下使用）
     let supabaseOrigins: string[] = []
     if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
@@ -160,7 +189,7 @@ const nextConfig: NextConfig = {
     }
     
     // 构建 CSP connect-src，包含媒体服务器（PostgreSQL 模式下不需要 Supabase）
-    // 注意：presigned URL 需要直接访问 MinIO，所以需要允许 localhost:19000
+    // 注意：presigned URL 需要直接访问 MinIO，所以需要允许所有媒体服务器地址
     const connectSrc = [
       "'self'",
       'https:',
@@ -170,6 +199,7 @@ const nextConfig: NextConfig = {
       // 在开发环境或 standalone 模式下，允许 localhost 连接（包括常用端口）
       // 这对于 presigned URL 直接上传到 MinIO 是必需的
       // 注意：CSP 不支持通配符端口，需要明确列出端口
+      // 在生产环境中，如果 mediaOrigins 包含 localhost，也需要允许（standalone 模式可能使用 localhost）
       ...(isDev || process.env.NODE_ENV !== 'production' 
         ? [
             'http://localhost',
@@ -179,7 +209,24 @@ const nextConfig: NextConfig = {
             'http://localhost:3000',  // Next.js 内部端口
           ] 
         : [])
-    ].join(' ')
+    ]
+    
+    // 在生产环境中，如果 mediaOrigins 包含 localhost，也需要添加到 CSP
+    // 这适用于 standalone 模式，其中可能使用 localhost:8081 作为媒体服务器
+    if (!isDev && process.env.NODE_ENV === 'production') {
+      const hasLocalhost = mediaOrigins.some(origin => origin.includes('localhost'))
+      if (hasLocalhost) {
+        // 添加所有可能的 localhost 端口（standalone 模式常用）
+        connectSrc.push(
+          'http://localhost:8081',
+          'https://localhost:8081',
+          'http://localhost:3000',
+          'https://localhost:3000'
+        )
+      }
+    }
+    
+    const connectSrcString = connectSrc.join(' ')
     
     return [
       {
@@ -253,7 +300,7 @@ const nextConfig: NextConfig = {
             // 注意：presigned URL 需要直接访问 MinIO，但 MinIO API 端口在 standalone 模式下不暴露
             // 上传组件有回退机制：如果 presigned URL 失败，会通过 Next.js API 代理上传
             // 所以 CSP 不需要允许 localhost:19000，因为上传会回退到代理方式
-            value: isDev ? '' : `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src ${connectSrc} https://challenges.cloudflare.com; media-src 'self' blob: https:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'self' https://challenges.cloudflare.com; frame-ancestors 'none';`,
+            value: isDev ? '' : `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src ${connectSrcString} https://challenges.cloudflare.com; media-src 'self' blob: https:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'self' https://challenges.cloudflare.com; frame-ancestors 'none';`,
           },
         ].filter(header => header.value !== ''), // 过滤空值
       },

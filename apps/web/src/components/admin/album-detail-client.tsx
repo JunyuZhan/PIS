@@ -1060,7 +1060,7 @@ export function AlbumDetailClient({ album, initialPhotos, mediaUrl: serverMediaU
               // 1. 数据库有记录但文件不存在 → 清理数据库记录
               // 2. 文件存在但数据库没有记录 → 创建数据库记录并加入队列
               // 3. 文件存在但状态是 pending → 重新加入处理队列
-              if (!confirm('确定要检查并修复卡住的照片吗？\n\n这将：\n- 清理文件不存在的 pending/failed 照片\n- 恢复 MinIO 中存在但数据库没有记录的照片\n- 重新加入处理队列（如果文件存在）\n\n注意：processing 状态的照片正在处理中，不会被清理。')) {
+              if (!confirm('确定要检查并修复卡住的照片吗？\n\n这将：\n- 清理文件不存在的 pending/failed 照片\n- 重置长时间卡住的 processing 照片（超过10分钟）\n- 恢复 MinIO 中存在但数据库没有记录的照片\n- 重新加入处理队列（如果文件存在）')) {
                 return
               }
               
@@ -1075,13 +1075,14 @@ export function AlbumDetailClient({ album, initialPhotos, mediaUrl: serverMediaU
                 }
                 
                 const result = await res.json()
-                const { processed = 0, requeued = 0, cleaned = 0, orphaned = 0 } = result
+                const { processed = 0, requeued = 0, cleaned = 0, stuckReset = 0, orphaned = 0 } = result
                 
                 let message = ''
-                if (processed === 0 && orphaned === 0) {
+                if (processed === 0 && orphaned === 0 && stuckReset === 0) {
                   message = '没有发现需要处理的问题'
                 } else {
                   const parts: string[] = []
+                  if (stuckReset > 0) parts.push(`${stuckReset} 张卡住的照片已重置`)
                   if (requeued > 0) parts.push(`${requeued} 张重新加入队列`)
                   if (cleaned > 0) parts.push(`${cleaned} 张已清理`)
                   if (orphaned > 0) parts.push(`${orphaned} 张孤立文件已恢复`)
@@ -1089,6 +1090,8 @@ export function AlbumDetailClient({ album, initialPhotos, mediaUrl: serverMediaU
                 }
                 
                 showSuccess(message)
+                // 刷新照片列表，确保状态更新
+                await loadPhotos(showDeleted, false)
                 router.refresh()
               } catch (err) {
                 console.error('Failed to check pending photos:', err)
@@ -1315,15 +1318,15 @@ export function AlbumDetailClient({ album, initialPhotos, mediaUrl: serverMediaU
 
               {/* 操作按钮 (悬停显示) */}
               {!selectionMode && !isReordering && photo.thumb_key && (
-                <div className="absolute bottom-2 left-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 flex-wrap max-w-full">
+                <div className="absolute bottom-2 left-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 flex-nowrap overflow-hidden">
                   {coverPhotoId !== photo.id && (
                     <button
                       onClick={(e) => handleSetCover(photo.id, e)}
-                      className="bg-black/70 hover:bg-black/90 px-2 py-1.5 rounded-full text-[10px] sm:text-xs text-white flex items-center justify-center gap-1 flex-shrink-0 whitespace-nowrap min-h-[32px] backdrop-blur-sm"
+                      className="bg-black/70 hover:bg-black/90 px-1.5 py-1 rounded-full text-[10px] text-white flex items-center justify-center gap-0.5 flex-1 min-w-0 backdrop-blur-sm"
                       title="设为封面"
                     >
-                      <ImageIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5 flex-shrink-0" />
-                      <span className="hidden sm:inline">设为封面</span>
+                      <ImageIcon className="w-3 h-3 flex-shrink-0" />
+                      <span className="truncate hidden sm:inline">设为封面</span>
                     </button>
                   )}
                   {/* 重新处理按钮（仅已完成状态的照片） */}
@@ -1333,42 +1336,42 @@ export function AlbumDetailClient({ album, initialPhotos, mediaUrl: serverMediaU
                         e.stopPropagation()
                         handleReprocessSingle(photo.id)
                       }}
-                      className="bg-blue-500/80 hover:bg-blue-600 px-2 py-1.5 rounded-full text-[10px] sm:text-xs text-white flex items-center justify-center gap-1 flex-shrink-0 whitespace-nowrap min-h-[32px] backdrop-blur-sm"
+                      className="bg-blue-500/80 hover:bg-blue-600 px-1.5 py-1 rounded-full text-[10px] text-white flex items-center justify-center gap-0.5 flex-1 min-w-0 backdrop-blur-sm"
                       title="重新处理照片（应用当前相册风格设置）"
                     >
-                      <RefreshCw className="w-3 h-3 sm:w-3.5 sm:h-3.5 flex-shrink-0" />
-                      <span className="hidden sm:inline">重新处理</span>
-                      <span className="sm:hidden">处理</span>
+                      <RefreshCw className="w-3 h-3 flex-shrink-0" />
+                      <span className="truncate hidden sm:inline">重新处理</span>
+                      <span className="truncate sm:hidden">处理</span>
                     </button>
                   )}
                   {showDeleted ? (
                     <>
                       <button
                         onClick={(e) => handleRestorePhoto(photo.id, e)}
-                        className="bg-green-500/80 hover:bg-green-600 px-2 py-1.5 rounded-full text-[10px] sm:text-xs text-white flex items-center justify-center gap-1 flex-shrink-0 whitespace-nowrap min-h-[32px] backdrop-blur-sm"
+                        className="bg-green-500/80 hover:bg-green-600 px-1.5 py-1 rounded-full text-[10px] text-white flex items-center justify-center gap-0.5 flex-1 min-w-0 backdrop-blur-sm"
                         disabled={isRestoring}
                         title="恢复"
                       >
-                        <RestoreIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5 flex-shrink-0" />
-                        <span className="hidden sm:inline">恢复</span>
+                        <RestoreIcon className="w-3 h-3 flex-shrink-0" />
+                        <span className="truncate hidden sm:inline">恢复</span>
                       </button>
                       <button
                         onClick={(e) => handleDeletePhoto(photo.id, e)}
-                        className="bg-red-500/80 hover:bg-red-600 p-1.5 sm:p-2 rounded-full text-white flex items-center justify-center flex-shrink-0 min-h-[32px] min-w-[32px] backdrop-blur-sm"
+                        className="bg-red-500/80 hover:bg-red-600 p-1.5 rounded-full text-white flex items-center justify-center flex-shrink-0 min-h-[24px] min-w-[24px] backdrop-blur-sm"
                         disabled={isDeleting}
                         title="永久删除"
                       >
-                        <Trash2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 flex-shrink-0" />
+                        <Trash2 className="w-3 h-3 flex-shrink-0" />
                       </button>
                     </>
                   ) : (
                     <button
                       onClick={(e) => handleDeletePhoto(photo.id, e)}
-                      className="bg-red-500/80 hover:bg-red-600 p-1.5 sm:p-2 rounded-full text-white flex items-center justify-center flex-shrink-0 min-h-[32px] min-w-[32px] backdrop-blur-sm"
+                      className="bg-red-500/80 hover:bg-red-600 p-1.5 rounded-full text-white flex items-center justify-center flex-shrink-0 min-h-[24px] min-w-[24px] backdrop-blur-sm"
                       disabled={isDeleting}
                       title="删除"
                     >
-                      <Trash2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 flex-shrink-0" />
+                      <Trash2 className="w-3 h-3 flex-shrink-0" />
                     </button>
                   )}
                 </div>

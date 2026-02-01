@@ -107,6 +107,7 @@ export function PhotoUploader({ albumId, onComplete }: PhotoUploaderProps) {
   const xhrMapRef = useRef<Map<string, XMLHttpRequest>>(new Map())
   const uploadQueueRef = useRef<string[]>([]) // 等待上传的文件 ID 队列
   const isProcessingQueueRef = useRef(false)
+  const onCompleteCalledRef = useRef(false) // 跟踪 onComplete 是否已调用
 
   // 自动移除已完成的上传项（延迟2秒后移除，让用户看到成功反馈）
   useEffect(() => {
@@ -129,6 +130,31 @@ export function PhotoUploader({ albumId, onComplete }: PhotoUploaderProps) {
       }
     })
   }, [files])
+
+  // 检查是否所有文件都已完成，如果是则调用 onComplete
+  useEffect(() => {
+    if (files.length === 0) {
+      // 如果没有文件了，重置 onComplete 调用标志
+      onCompleteCalledRef.current = false
+      return
+    }
+    
+    // 检查是否所有文件都已完成（包括成功和失败）
+    const allCompleted = files.every(f => 
+      f.status === 'completed' || f.status === 'failed'
+    )
+    
+    // 只有当所有文件都已完成且尚未调用过 onComplete 时，才通知父组件
+    if (allCompleted && !onCompleteCalledRef.current) {
+      onCompleteCalledRef.current = true
+      // 延迟调用，确保状态更新完成
+      const timer = setTimeout(() => {
+        onComplete?.()
+      }, 500) // 延迟500ms，确保所有状态更新完成
+      
+      return () => clearTimeout(timer)
+    }
+  }, [files, onComplete])
 
   // 组件卸载时清理所有定时器
   useEffect(() => {
@@ -295,6 +321,10 @@ export function PhotoUploader({ albumId, onComplete }: PhotoUploaderProps) {
     // 将新文件加入队列
     uploadQueueRef.current.push(...uploadFiles.map(f => f.id))
     setFiles((prev) => [...prev, ...uploadFiles])
+    
+    // 添加新文件时，重置 onComplete 调用标志
+    // 这样当新文件上传完成后，可以再次触发 onComplete
+    onCompleteCalledRef.current = false
 
     // 开始处理队列
     setTimeout(processQueue, 0)
@@ -1332,11 +1362,9 @@ export function PhotoUploader({ albumId, onComplete }: PhotoUploaderProps) {
       
       // 从队列中移除已完成的文件
       uploadQueueRef.current = uploadQueueRef.current.filter(id => id !== uploadFile.id)
-
-      // 通知父组件上传完成（触发照片列表刷新）
-      onComplete?.()
       
       // 延迟刷新页面数据，给照片列表加载一些时间
+      // 注意：onComplete 会在 useEffect 中检查所有文件完成后自动调用
       setTimeout(() => {
         router.refresh()
       }, 300)
@@ -1415,10 +1443,8 @@ export function PhotoUploader({ albumId, onComplete }: PhotoUploaderProps) {
       
       // 无论清理成功与否，都刷新页面数据以更新处理中的照片数量
       // 这样即使清理失败，用户也能看到实际状态
+      // 注意：onComplete 会在 useEffect 中检查所有文件完成后自动调用
       router.refresh()
-      if (cleanupSuccess) {
-        onComplete?.()
-      }
     } finally {
       // 上传完成（无论成功失败），处理队列中的下一个文件
       setTimeout(processQueue, 100)

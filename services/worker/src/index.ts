@@ -1592,8 +1592,9 @@ const server = http.createServer(async (req, res) => {
         processed: result?.processed || 0,
         requeued: result?.requeued || 0,
         cleaned: result?.cleaned || 0,
+        stuckReset: result?.stuckReset || 0,
         orphaned: result?.orphaned || 0,
-        message: `检查完成：${result?.processed || 0} 张照片，${result?.requeued || 0} 张重新加入队列，${result?.cleaned || 0} 张已清理${result?.orphaned ? `，${result.orphaned} 张孤立文件已恢复` : ''}`,
+        message: `检查完成：${result?.processed || 0} 张照片，${result?.requeued || 0} 张重新加入队列，${result?.cleaned || 0} 张已清理${result?.stuckReset ? `，${result.stuckReset} 张卡住的照片已重置` : ''}${result?.orphaned ? `，${result.orphaned} 张孤立文件已恢复` : ''}`,
       }));
     } catch (err: any) {
       console.error('Check pending error:', err);
@@ -1998,7 +1999,7 @@ async function recoverStuckProcessingPhotos() {
 async function checkPendingPhotos(albumId?: string) {
   try {
     // 1. 查询 pending 状态的照片（可选：指定相册）
-    let query = supabase
+    let pendingQuery = supabase
       .from('photos')
       .select('id, album_id, original_key, created_at, updated_at')
       .eq('status', 'pending')
@@ -2006,14 +2007,34 @@ async function checkPendingPhotos(albumId?: string) {
       .limit(100); // 限制每次最多检查 100 张
     
     if (albumId) {
-      query = query.eq('album_id', albumId);
+      pendingQuery = pendingQuery.eq('album_id', albumId);
     }
     
-    const { data: pendingPhotos, error } = await query;
+    const { data: pendingPhotos, error: pendingError } = await pendingQuery;
     
-    if (error) {
-      console.error('❌ Failed to query pending photos:', error);
-      return;
+    if (pendingError) {
+      console.error('❌ Failed to query pending photos:', pendingError);
+    }
+    
+    // 1b. 查询长时间处于 processing 状态的照片（可能卡住了）
+    // 如果 updated_at 超过 10 分钟没有更新，说明可能卡住了
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    let processingQuery = supabase
+      .from('photos')
+      .select('id, album_id, original_key, created_at, updated_at')
+      .eq('status', 'processing')
+      .lt('updated_at', tenMinutesAgo) // updated_at 超过 10 分钟
+      .order('updated_at', { ascending: true })
+      .limit(100);
+    
+    if (albumId) {
+      processingQuery = processingQuery.eq('album_id', albumId);
+    }
+    
+    const { data: stuckProcessingPhotos, error: processingError } = await processingQuery;
+    
+    if (processingError) {
+      console.error('❌ Failed to query stuck processing photos:', processingError);
     }
     
     // 2. 检查队列中是否有对应的任务（避免重复添加）
@@ -2031,11 +2052,17 @@ async function checkPendingPhotos(albumId?: string) {
     let processedCount = 0;
     let requeuedCount = 0;
     let cleanedCount = 0;
+    let stuckResetCount = 0;
     let orphanedFilesCount = 0;
     
     // 3. 检查每个 pending 照片的文件是否存在
-    if (pendingPhotos && pendingPhotos.length > 0) {
-      for (const photo of pendingPhotos) {
+    const allPhotosToCheck = [
+      ...(pendingPhotos || []).map(p => ({ ...p, isPending: true })),
+      ...(stuckProcessingPhotos || []).map(p => ({ ...p, isPending: false }))
+    ];
+    
+    if (allPhotosToCheck.length > 0) {
+      for (const photo of allPhotosToCheck) {
         // 如果已经在队列中，跳过
         if (queuedPhotoIds.has(photo.id)) {
           continue;
@@ -2046,7 +2073,17 @@ async function checkPendingPhotos(albumId?: string) {
           const fileExists = await checkFileExists(photo.original_key);
           
           if (fileExists) {
-            // 文件存在，但状态是 pending，说明上传成功但处理未触发
+            // 文件存在，但状态是 pending 或长时间 processing，说明处理未完成或卡住了
+            // 重置为 pending 并重新加入处理队列
+            if (!photo.isPending) {
+              // 如果是卡住的 processing 状态，先重置为 pending
+              await supabase
+                .from('photos')
+                .update({ status: 'pending' })
+                .eq('id', photo.id);
+              stuckResetCount++;
+            }
+            
             // 重新加入处理队列
             try {
               await photoQueue.add('process-photo', {
@@ -2230,6 +2267,7 @@ async function checkPendingPhotos(albumId?: string) {
       processed: processedCount,
       requeued: requeuedCount,
       cleaned: cleanedCount,
+      stuckReset: stuckResetCount,
       orphaned: orphanedFilesCount,
     };
   } catch (err: any) {
