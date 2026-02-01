@@ -396,6 +396,53 @@ generate_config() {
     local env_file="$PROJECT_ROOT/.env.generated"
     local env_target="$PROJECT_ROOT/.env"
 
+    # 检查 .env 文件是否已存在，如果使用了默认值则生成新配置
+    if [ -f "$env_target" ]; then
+        echo ""
+        echo -e "${CYAN}检测到现有配置文件...${NC}"
+        
+        # 检查是否使用了默认的 MinIO 密钥
+        minio_user=$(grep '^MINIO_ROOT_USER=' "$env_target" 2>/dev/null | cut -d'=' -f2 | xargs)
+        minio_pass=$(grep '^MINIO_ROOT_PASSWORD=' "$env_target" 2>/dev/null | cut -d'=' -f2 | xargs)
+        
+        # 检查是否使用了默认的数据库密码
+        db_pass=$(grep '^DATABASE_PASSWORD=' "$env_target" 2>/dev/null | cut -d'=' -f2 | xargs)
+        postgres_pass=$(grep '^POSTGRES_PASSWORD=' "$env_target" 2>/dev/null | cut -d'=' -f2 | xargs)
+        
+        # 检查是否使用了默认的 Worker API Key
+        worker_key=$(grep '^WORKER_API_KEY=' "$env_target" 2>/dev/null | cut -d'=' -f2 | xargs)
+        
+        # 检查是否为默认值
+        use_default=0
+        if [ "$minio_user" = "minioadmin" ] || [ "$minio_pass" = "minioadmin" ]; then
+            echo -e "${YELLOW}⚠️  检测到使用默认 MinIO 密钥（minioadmin），为了安全，将生成新密钥${NC}"
+            use_default=1
+        fi
+        
+        if [ "$db_pass" = "changeme" ] || [ "$db_pass" = "your-secure-password" ] || [ "$postgres_pass" = "changeme" ] || [ "$postgres_pass" = "your-secure-password" ]; then
+            echo -e "${YELLOW}⚠️  检测到使用默认数据库密码，为了安全，将生成新密钥${NC}"
+            use_default=1
+        fi
+        
+        if [ "$worker_key" = "changeme" ]; then
+            echo -e "${YELLOW}⚠️  检测到使用默认 Worker API Key，为了安全，将生成新密钥${NC}"
+            use_default=1
+        fi
+        
+        # 如果使用了默认值，生成新配置；否则保留现有配置
+        if [ "$use_default" -eq 1 ]; then
+            echo -e "${CYAN}将生成新的安全密钥...${NC}"
+            echo ""
+            # 继续执行下面的配置生成代码
+        else
+            echo -e "${CYAN}配置文件位置：$env_target${NC}"
+            echo -e "${CYAN}已配置自定义密钥，保留现有配置${NC}"
+            echo ""
+            print_success "保留现有配置"
+            return 0
+        fi
+    fi
+
     echo ""
     echo -e "${CYAN}正在生成配置文件...${NC}"
 
