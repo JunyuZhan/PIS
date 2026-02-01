@@ -317,7 +317,7 @@ const worker = new Worker<PhotoJobData>(
       // 注意：这不是标准的乐观锁（需要版本号字段），而是基于状态的条件更新
       // Supabase 的 UPDATE ... WHERE 是原子操作，可以安全地防止竞态条件
       // 同时排除已删除的照片（deleted_at IS NULL）
-      const { data: updatedPhoto, error: updateError } = await supabase
+      let { data: updatedPhoto, error: updateError } = await supabase
         .from('photos')
         .update({ status: 'processing' })
         .eq('id', photoId)
