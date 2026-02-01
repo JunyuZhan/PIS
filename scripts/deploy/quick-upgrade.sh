@@ -30,6 +30,31 @@ NC='\033[0m'
 FORCE_UPDATE=false
 REGENERATE_SECRETS=false
 
+# 检测项目根目录
+detect_project_root() {
+    # 从脚本所在目录开始，向上查找项目根目录
+    local script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    local current_dir="$script_dir"
+    
+    # 向上查找，直到找到包含 .env.example 的目录
+    while [ "$current_dir" != "/" ]; do
+        if [ -f "$current_dir/.env.example" ]; then
+            PROJECT_ROOT="$current_dir"
+            cd "$PROJECT_ROOT"
+            return 0
+        fi
+        current_dir="$(dirname "$current_dir")"
+    done
+    
+    # 如果没找到，尝试从当前工作目录查找
+    if [ -f ".env.example" ]; then
+        PROJECT_ROOT="$(pwd)"
+        return 0
+    fi
+    
+    return 1
+}
+
 # 打印函数
 info() { echo -e "${BLUE}ℹ${NC} $1"; }
 success() { echo -e "${GREEN}✓${NC} $1"; }
@@ -78,7 +103,7 @@ is_default_or_empty() {
 update_env_secret() {
     local key="$1"
     local new_value="$2"
-    local env_file=".env"
+    local env_file="${PROJECT_ROOT}/.env"
     
     if [ ! -f "$env_file" ]; then
         return 1
@@ -119,9 +144,17 @@ done
 check_project_dir() {
     info "检查项目目录..."
     
-    if [ ! -f ".env.example" ]; then
+    # 自动检测项目根目录
+    if ! detect_project_root; then
         error "未找到 .env.example 文件"
-        error "请确保在项目根目录中运行此脚本"
+        error "请确保在项目根目录中运行此脚本，或确保项目根目录存在 .env.example 文件"
+        exit 1
+    fi
+    
+    info "项目根目录: $PROJECT_ROOT"
+    
+    if [ ! -f "$PROJECT_ROOT/.env.example" ]; then
+        error "未找到 .env.example 文件: $PROJECT_ROOT/.env.example"
         exit 1
     fi
     
@@ -184,9 +217,11 @@ pull_latest_code() {
 update_config_files() {
     info "检查配置文件..."
     
+    local env_file="${PROJECT_ROOT}/.env"
+    
     # 检查 .env 文件
-    if [ ! -f ".env" ]; then
-        warn "未找到 .env 文件"
+    if [ ! -f "$env_file" ]; then
+        warn "未找到 .env 文件: $env_file"
         warn "首次部署？请运行: bash scripts/deploy/quick-deploy.sh"
         return 0
     fi
@@ -197,8 +232,8 @@ update_config_files() {
     local secrets_regenerated=0
     
     # 1. 检查数据库密码
-    DB_PASS=$(grep '^DATABASE_PASSWORD=' .env 2>/dev/null | cut -d'=' -f2- | xargs)
-    POSTGRES_PASS=$(grep '^POSTGRES_PASSWORD=' .env 2>/dev/null | cut -d'=' -f2- | xargs)
+    DB_PASS=$(grep '^DATABASE_PASSWORD=' "$env_file" 2>/dev/null | cut -d'=' -f2- | xargs)
+    POSTGRES_PASS=$(grep '^POSTGRES_PASSWORD=' "$env_file" 2>/dev/null | cut -d'=' -f2- | xargs)
     
     if is_default_or_empty "$DB_PASS" "changeme your-secure-password" || \
        is_default_or_empty "$POSTGRES_PASS" "changeme your-secure-password"; then
@@ -211,12 +246,12 @@ update_config_files() {
     fi
     
     # 2. 检查 MinIO 密钥
-    MINIO_USER=$(grep '^MINIO_ROOT_USER=' .env 2>/dev/null | cut -d'=' -f2- | xargs)
-    MINIO_ACCESS=$(grep '^MINIO_ACCESS_KEY=' .env 2>/dev/null | cut -d'=' -f2- | xargs)
-    STORAGE_ACCESS=$(grep '^STORAGE_ACCESS_KEY=' .env 2>/dev/null | cut -d'=' -f2- | xargs)
-    MINIO_PASS=$(grep '^MINIO_ROOT_PASSWORD=' .env 2>/dev/null | cut -d'=' -f2- | xargs)
-    MINIO_SECRET=$(grep '^MINIO_SECRET_KEY=' .env 2>/dev/null | cut -d'=' -f2- | xargs)
-    STORAGE_SECRET=$(grep '^STORAGE_SECRET_KEY=' .env 2>/dev/null | cut -d'=' -f2- | xargs)
+    MINIO_USER=$(grep '^MINIO_ROOT_USER=' "$env_file" 2>/dev/null | cut -d'=' -f2- | xargs)
+    MINIO_ACCESS=$(grep '^MINIO_ACCESS_KEY=' "$env_file" 2>/dev/null | cut -d'=' -f2- | xargs)
+    STORAGE_ACCESS=$(grep '^STORAGE_ACCESS_KEY=' "$env_file" 2>/dev/null | cut -d'=' -f2- | xargs)
+    MINIO_PASS=$(grep '^MINIO_ROOT_PASSWORD=' "$env_file" 2>/dev/null | cut -d'=' -f2- | xargs)
+    MINIO_SECRET=$(grep '^MINIO_SECRET_KEY=' "$env_file" 2>/dev/null | cut -d'=' -f2- | xargs)
+    STORAGE_SECRET=$(grep '^STORAGE_SECRET_KEY=' "$env_file" 2>/dev/null | cut -d'=' -f2- | xargs)
     
     if is_default_or_empty "$MINIO_USER" "minioadmin" || \
        is_default_or_empty "$MINIO_ACCESS" "minioadmin" || \
@@ -243,7 +278,7 @@ update_config_files() {
     fi
     
     # 3. 检查 Worker API Key
-    WORKER_API_KEY=$(grep '^WORKER_API_KEY=' .env 2>/dev/null | cut -d'=' -f2- | xargs)
+    WORKER_API_KEY=$(grep '^WORKER_API_KEY=' "$env_file" 2>/dev/null | cut -d'=' -f2- | xargs)
     if is_default_or_empty "$WORKER_API_KEY" "AUTO_GENERATE_32 changeme"; then
         warn "检测到默认或空的 Worker API Key，正在重新生成..."
         local new_worker_key=$(generate_secret 32)
@@ -253,7 +288,7 @@ update_config_files() {
     fi
     
     # 4. 检查 JWT Secret
-    JWT_SECRET=$(grep '^AUTH_JWT_SECRET=' .env 2>/dev/null | cut -d'=' -f2- | xargs)
+    JWT_SECRET=$(grep '^AUTH_JWT_SECRET=' "$env_file" 2>/dev/null | cut -d'=' -f2- | xargs)
     if is_default_or_empty "$JWT_SECRET" "AUTO_GENERATE_32 changeme"; then
         warn "检测到默认或空的 JWT Secret，正在重新生成..."
         local new_jwt_secret=$(generate_secret 32)
@@ -263,7 +298,7 @@ update_config_files() {
     fi
     
     # 5. 检查会话密钥
-    SESSION_SECRET=$(grep '^ALBUM_SESSION_SECRET=' .env 2>/dev/null | cut -d'=' -f2- | xargs)
+    SESSION_SECRET=$(grep '^ALBUM_SESSION_SECRET=' "$env_file" 2>/dev/null | cut -d'=' -f2- | xargs)
     if [ -z "$SESSION_SECRET" ]; then
         warn "检测到空的会话密钥，正在重新生成..."
         local new_session_secret=$(generate_secret 32)

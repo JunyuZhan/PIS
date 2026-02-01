@@ -1,17 +1,18 @@
 #!/bin/bash
 # ============================================
-# PIS 快速部署脚本（不管理服务器容器）
+# PIS 一键部署脚本
 # ============================================
 # 
 # 特性：
 #   - 快速部署，生成随机密钥
-#   - 不启动服务器上的 Docker 容器
+#   - 自动启动 Docker 容器（可选）
 #   - 生成配置文件和部署信息
 #   - 支持自定义配置
 #
 # 使用方法：
 #   cd /opt/pis-standalone
-#   bash scripts/deploy/quick-deploy.sh
+#   bash scripts/deploy/quick-deploy.sh                    # 一键部署并启动服务
+#   bash scripts/deploy/quick-deploy.sh --no-start         # 只生成配置，不启动服务
 #   bash scripts/deploy/quick-deploy.sh --minio-user albert --minio-pass Zjy-1314
 # ============================================
 
@@ -29,6 +30,33 @@ NC='\033[0m'
 # 全局变量
 MINIO_USER=""
 MINIO_PASS=""
+START_SERVICES=true
+COMPOSE_CMD=""
+
+# 检测项目根目录
+detect_project_root() {
+    # 从脚本所在目录开始，向上查找项目根目录
+    local script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    local current_dir="$script_dir"
+    
+    # 向上查找，直到找到包含 .env.example 的目录
+    while [ "$current_dir" != "/" ]; do
+        if [ -f "$current_dir/.env.example" ]; then
+            PROJECT_ROOT="$current_dir"
+            cd "$PROJECT_ROOT"
+            return 0
+        fi
+        current_dir="$(dirname "$current_dir")"
+    done
+    
+    # 如果没找到，尝试从当前工作目录查找
+    if [ -f ".env.example" ]; then
+        PROJECT_ROOT="$(pwd)"
+        return 0
+    fi
+    
+    return 1
+}
 
 # 打印函数
 info() { echo -e "${BLUE}ℹ${NC} $1"; }
@@ -46,11 +74,8 @@ print_header() {
 }
 
 # 解析参数
-MINIO_USER=""
-MINIO_PASS=""
-
-for arg in "$@"; do
-    case $arg in
+while [[ $# -gt 0 ]]; do
+    case $1 in
         --minio-user)
             MINIO_USER="$2"
             shift 2
@@ -59,7 +84,12 @@ for arg in "$@"; do
             MINIO_PASS="$2"
             shift 2
             ;;
+        --no-start)
+            START_SERVICES=false
+            shift
+            ;;
         *)
+            warn "未知参数: $1"
             shift
             ;;
     esac
@@ -78,9 +108,17 @@ generate_secret() {
 check_project_dir() {
     info "检查项目目录..."
     
-    if [ ! -f ".env.example" ]; then
+    # 自动检测项目根目录
+    if ! detect_project_root; then
         error "未找到 .env.example 文件"
-        error "请确保在项目根目录中运行此脚本"
+        error "请确保在项目根目录中运行此脚本，或确保项目根目录存在 .env.example 文件"
+        exit 1
+    fi
+    
+    info "项目根目录: $PROJECT_ROOT"
+    
+    if [ ! -f "$PROJECT_ROOT/.env.example" ]; then
+        error "未找到 .env.example 文件: $PROJECT_ROOT/.env.example"
         exit 1
     fi
     
@@ -91,7 +129,7 @@ check_project_dir() {
 create_env_file() {
     info "检查配置文件..."
     
-    if [ -f ".env" ]; then
+    if [ -f "${PROJECT_ROOT}/.env" ]; then
         warn "检测到现有 .env 文件"
         read -p "是否覆盖现有配置？(y/N): " confirm
         if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
@@ -102,22 +140,25 @@ create_env_file() {
     
     info "生成配置文件..."
     
-    # 生成密钥
+    # 生成密钥（导出为全局变量供其他函数使用）
     POSTGRES_DB=pis
     POSTGRES_USER=pis
     POSTGRES_PASSWORD=$(generate_secret 32)
+    export POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD
     
     MINIO_ROOT_USER=${MINIO_USER:-$(generate_secret 16)}
     MINIO_ROOT_PASSWORD=${MINIO_PASS:-$(generate_secret 32)}
     MINIO_ACCESS_KEY=$MINIO_ROOT_USER
     MINIO_SECRET_KEY=$MINIO_ROOT_PASSWORD
+    export MINIO_ROOT_USER MINIO_ROOT_PASSWORD MINIO_ACCESS_KEY MINIO_SECRET_KEY
     
     WORKER_API_KEY=$(generate_secret 32)
     AUTH_JWT_SECRET=$(generate_secret 32)
     ALBUM_SESSION_SECRET=$(generate_secret 32)
+    export WORKER_API_KEY AUTH_JWT_SECRET ALBUM_SESSION_SECRET
     
     # 创建 .env 文件
-    cat > .env << EOF
+    cat > "${PROJECT_ROOT}/.env" << EOF
 # ===========================================
 # PIS Standalone 配置
 # 自动生成于: $(date)
@@ -176,14 +217,14 @@ AUTH_MODE=custom
 AUTH_JWT_SECRET=$AUTH_JWT_SECRET
 EOF
 
-    success "配置文件已生成: .env"
+    success "配置文件已生成: ${PROJECT_ROOT}/.env"
 }
 
 # 保存部署信息
 save_deployment_info() {
     info "保存部署信息..."
     
-    cat > .deployment-info << EOF
+    cat > "${PROJECT_ROOT}/.deployment-info" << EOF
 # ===========================================
 # PIS 部署信息
 # ===========================================
@@ -293,38 +334,150 @@ save_deployment_info() {
 # 7. 请妥善保管 .deployment-info 文件中的安全密钥
 EOF
 
-    success "部署信息已保存: .deployment-info"
+    success "部署信息已保存: ${PROJECT_ROOT}/.deployment-info"
+}
+
+# 检查 Docker 和 Docker Compose
+check_docker() {
+    info "检查 Docker 环境..."
+    
+    if ! command -v docker &> /dev/null; then
+        error "Docker 未安装"
+        error "请先安装 Docker: curl -fsSL https://get.docker.com | sh"
+        return 1
+    fi
+    success "Docker 已安装: $(docker --version)"
+    
+    # 检查 Docker Compose
+    if docker compose version &> /dev/null; then
+        COMPOSE_CMD="docker compose"
+        success "Docker Compose 已安装（compose 插件）"
+    elif command -v docker-compose &> /dev/null; then
+        COMPOSE_CMD="docker-compose"
+        success "Docker Compose 已安装（standalone）"
+    else
+        error "Docker Compose 未安装"
+        error "请先安装 Docker Compose"
+        return 1
+    fi
+    
+    return 0
+}
+
+# 启动 Docker 服务
+start_services() {
+    info "正在启动 Docker 服务..."
+    
+    local docker_dir="${PROJECT_ROOT}/docker"
+    
+    if [ ! -d "$docker_dir" ]; then
+        error "未找到 docker 目录: $docker_dir"
+        return 1
+    fi
+    
+    cd "$docker_dir"
+    
+    # 检查 docker-compose 文件
+    local compose_file="docker-compose.standalone.yml"
+    if [ ! -f "$compose_file" ]; then
+        warn "未找到 $compose_file，尝试使用 docker-compose.yml"
+        compose_file="docker-compose.yml"
+        if [ ! -f "$compose_file" ]; then
+            error "未找到 docker-compose 配置文件"
+            return 1
+        fi
+    fi
+    
+    info "使用配置文件: $compose_file"
+    
+    # 停止旧容器（如果有）
+    info "停止旧容器（如果有）..."
+    $COMPOSE_CMD -f "$compose_file" down 2>/dev/null || true
+    
+    # 启动服务
+    info "正在启动 Docker 容器..."
+    if $COMPOSE_CMD -f "$compose_file" up -d; then
+        success "Docker 容器启动成功"
+        
+        # 等待服务启动
+        info "等待服务启动..."
+        sleep 10
+        
+        # 检查服务状态
+        info "检查服务状态..."
+        $COMPOSE_CMD -f "$compose_file" ps
+        
+        return 0
+    else
+        error "Docker 容器启动失败"
+        return 1
+    fi
 }
 
 # 显示完成信息
 show_completion() {
     echo ""
-    echo -e "${GREEN}========================================${NC}"
-    echo -e "${GREEN}  部署准备完成！${NC}"
-    echo -e "${GREEN}========================================${NC}"
-    echo ""
-    echo -e "${BLUE}下一步操作：${NC}"
-    echo ""
-    echo -e "  1. ${CYAN}提交代码到 GitHub${NC}"
-    echo -e "     git add ."
-    echo -e "     git commit -m \"Initial deployment\""
-    echo -e "     git push origin main"
-    echo ""
-    echo -e "  2. ${CYAN}在服务器上拉取代码${NC}"
-    echo -e "     cd /opt/pis-standalone"
-    echo -e "     git pull origin main"
-    echo ""
-    echo -e "  3. ${CYAN}启动服务（在服务器上运行）${NC}"
-    echo -e "     cd /opt/pis-standalone/docker"
-    echo -e "     docker compose up -d"
-    echo ""
-    echo -e "  4. ${CYAN}查看部署信息${NC}"
-    echo -e "     cat .deployment-info"
-    echo ""
-    echo -e "${YELLOW}⚠️  注意：${NC}"
-    echo -e "   本脚本只生成配置文件，不启动服务器上的容器"
-    echo -e "   服务器上的容器需要单独启动"
-    echo ""
+    if [ "$START_SERVICES" = true ]; then
+        echo -e "${GREEN}========================================${NC}"
+        echo -e "${GREEN}  一键部署完成！${NC}"
+        echo -e "${GREEN}========================================${NC}"
+        echo ""
+        echo -e "${BLUE}服务访问地址：${NC}"
+        echo ""
+        echo -e "  🌐 Web 管理后台:"
+        echo -e "     http://localhost:8081/admin/login"
+        echo ""
+        echo -e "  📦 MinIO 控制台:"
+        echo -e "     http://localhost:8081/minio-console/"
+        echo -e "     用户名: $MINIO_ROOT_USER"
+        echo -e "     密码: $MINIO_ROOT_PASSWORD"
+        echo ""
+        echo -e "  📝 部署信息已保存到:"
+        echo -e "     ${PROJECT_ROOT}/.deployment-info"
+        echo ""
+        echo -e "${BLUE}常用命令：${NC}"
+        echo ""
+        local compose_cmd="${COMPOSE_CMD:-docker compose}"
+        echo -e "  查看服务状态:"
+        echo -e "     cd ${PROJECT_ROOT}/docker && $compose_cmd ps"
+        echo ""
+        echo -e "  查看服务日志:"
+        echo -e "     cd ${PROJECT_ROOT}/docker && $compose_cmd logs -f"
+        echo ""
+        echo -e "  重启服务:"
+        echo -e "     cd ${PROJECT_ROOT}/docker && $compose_cmd restart"
+        echo ""
+        echo -e "  停止服务:"
+        echo -e "     cd ${PROJECT_ROOT}/docker && $compose_cmd down"
+        echo ""
+    else
+        echo -e "${GREEN}========================================${NC}"
+        echo -e "${GREEN}  部署准备完成！${NC}"
+        echo -e "${GREEN}========================================${NC}"
+        echo ""
+        echo -e "${BLUE}下一步操作：${NC}"
+        echo ""
+        echo -e "  1. ${CYAN}提交代码到 GitHub${NC}"
+        echo -e "     git add ."
+        echo -e "     git commit -m \"Initial deployment\""
+        echo -e "     git push origin main"
+        echo ""
+        echo -e "  2. ${CYAN}在服务器上拉取代码${NC}"
+        echo -e "     cd /opt/pis-standalone"
+        echo -e "     git pull origin main"
+        echo ""
+        echo -e "  3. ${CYAN}启动服务（在服务器上运行）${NC}"
+        echo -e "     cd /opt/pis-standalone/docker"
+        echo -e "     docker compose up -d"
+        echo ""
+        echo -e "  4. ${CYAN}查看部署信息${NC}"
+        echo -e "     cat .deployment-info"
+        echo ""
+        echo -e "${YELLOW}⚠️  注意：${NC}"
+        echo -e "   使用了 --no-start 选项，未启动 Docker 容器"
+        echo -e "   需要手动启动容器才能使用服务"
+        echo ""
+    fi
 }
 
 # 主函数
@@ -334,6 +487,17 @@ main() {
     check_project_dir
     create_env_file
     save_deployment_info
+    
+    # 如果需要启动服务，检查 Docker 并启动
+    if [ "$START_SERVICES" = true ]; then
+        if check_docker; then
+            start_services
+        else
+            warn "Docker 环境检查失败，跳过服务启动"
+            warn "请手动启动服务: cd ${PROJECT_ROOT}/docker && docker compose up -d"
+        fi
+    fi
+    
     show_completion
 }
 
