@@ -1225,6 +1225,12 @@ export function ColorGradingPreview({
 
 ---
 
+## 参考文档
+
+- **[风格预设参数列表](./STYLE_PRESETS_PARAMETERS.md)** - 所有预设的详细参数值和说明
+
+---
+
 ## 性能考虑
 
 ### 处理时间影响

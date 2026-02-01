@@ -106,10 +106,10 @@
 
 ```bash
 # 一条命令完成所有部署（无需任何交互）
-curl -sSL https://raw.githubusercontent.com/JunyuZhan/pis-standalone/main/scripts/one-click-deploy.sh | bash
+curl -sSL https://raw.githubusercontent.com/JunyuZhan/pis-standalone/main/scripts/deploy/one-click-deploy.sh | bash
 
 # 国内用户（使用代理加速）
-curl -sSL https://ghproxy.com/https://raw.githubusercontent.com/JunyuZhan/pis-standalone/main/scripts/one-click-deploy.sh | bash
+curl -sSL https://ghproxy.com/https://raw.githubusercontent.com/JunyuZhan/pis-standalone/main/scripts/deploy/one-click-deploy.sh | bash
 ```
 
 此脚本会自动完成：
@@ -122,14 +122,11 @@ curl -sSL https://ghproxy.com/https://raw.githubusercontent.com/JunyuZhan/pis-st
 **📋 交互式部署（引导配置）**
 
 ```bash
-# 交互式配置向导
-curl -sSL https://raw.githubusercontent.com/JunyuZhan/pis-standalone/main/scripts/install.sh | tr -d '\r' | bash
-
-# 国内用户（使用代理加速）
-curl -sSL https://ghproxy.com/https://raw.githubusercontent.com/JunyuZhan/pis-standalone/main/scripts/install.sh | tr -d '\r' | bash
+# 克隆代码并运行交互式配置向导
+git clone https://github.com/JunyuZhan/pis-standalone.git
+cd pis-standalone/docker
+bash deploy.sh
 ```
-
-> 💡 **提示**: `tr -d '\r'` 命令可确保跨系统兼容性，移除 Windows 行尾。脚本本身也包含自动行尾清理机制作为备用方案。
 
 或者手动安装：
 

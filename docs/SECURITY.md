@@ -10,8 +10,8 @@
 
 ### 部署前必检项目
 
-- [ ] 运行安全检查脚本: `bash scripts/check-security.sh`
-- [ ] 验证环境变量配置: `bash scripts/setup.sh` (选项 3)
+- [ ] 运行安全检查脚本: `bash scripts/utils/check-security.sh`
+- [ ] 验证环境变量配置: `bash scripts/deploy/setup.sh` (选项 3)
 - [ ] 确保 `.env` 不包含真实密钥
 - [ ] 检查 `.gitignore` 正确配置敏感文件
 - [ ] 生产环境启用 HTTPS
@@ -705,7 +705,7 @@ id_rsa.pub
 
 ```bash
 # 运行安全检查
-bash scripts/check-security.sh
+bash scripts/utils/check-security.sh
 ```
 
 脚本会检查：
@@ -751,7 +751,7 @@ bash scripts/check-security.sh
 - [ ] 确认 `.env.example` 只包含占位符
 - [ ] 确认文档中的示例都是占位符
 - [ ] 确认 `.gitignore` 正确配置
-- [ ] 已运行 `scripts/check-security.sh` 并通过
+- [ ] 已运行 `scripts/utils/check-security.sh` 并通过
 - [ ] 如果密钥已泄露，已重新生成所有密钥
 - [ ] 已测试使用 `.env.example` 可以正常配置项目
 
@@ -759,7 +759,7 @@ bash scripts/check-security.sh
 
 1. **运行安全检查**
    ```bash
-   bash scripts/check-security.sh
+   bash scripts/utils/check-security.sh
    ```
 
 2. **确认检查通过**

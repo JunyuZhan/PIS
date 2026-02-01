@@ -97,7 +97,97 @@ bash deploy.sh
 
 ---
 
-### 4. `scripts/deploy/start-internal-services.sh` - 内网服务启动脚本 ⭐ 新增
+### 4. `scripts/deploy/one-click-deploy.sh` - 真正的一键部署脚本 ⭐ 推荐
+
+**用途：** 完全自动化部署，无需任何交互
+
+**功能：**
+- ✅ 完全自动化，无需交互
+- ✅ 自动检测并安装 Docker、Docker Compose
+- ✅ 自动克隆代码（如果不在项目目录）
+- ✅ 使用默认配置（standalone 模式）
+- ✅ 自动生成所有密钥和密码
+- ✅ 自动启动所有服务
+- ✅ 自动创建管理员账户（首次登录设置密码）
+
+**使用场景：**
+- 快速测试部署
+- 演示环境部署
+- 不需要自定义配置的场景
+
+**用法：**
+```bash
+# 从 GitHub 直接运行
+curl -sSL https://raw.githubusercontent.com/JunyuZhan/pis-standalone/main/scripts/deploy/one-click-deploy.sh | bash
+
+# 或在项目目录中运行
+bash scripts/deploy/one-click-deploy.sh
+```
+
+**特点：**
+- 完全自动化
+- 适合快速部署
+- 使用默认配置
+
+---
+
+### 5. `scripts/deploy/quick-deploy.sh` - 快速部署脚本（只生成配置）
+
+**用途：** 快速生成配置文件，不管理服务器上的容器
+
+**功能：**
+- ✅ 快速生成配置文件
+- ✅ 不管理服务器上的容器
+- ✅ 支持自定义 MinIO 密钥
+- ✅ 生成部署信息
+
+**使用场景：**
+- 只生成配置文件
+- 不启动容器
+- 配置后手动启动容器
+
+**用法：**
+```bash
+bash scripts/deploy/quick-deploy.sh
+bash scripts/deploy/quick-deploy.sh --minio-user albert --minio-pass Zjy-1314
+```
+
+**特点：**
+- 只生成配置
+- 不管理容器
+- 适合配置管理
+
+---
+
+### 7. `scripts/deploy/quick-upgrade.sh` - 快速升级脚本（只更新代码）
+
+**用途：** 快速升级代码和配置，不管理服务器上的容器
+
+**功能：**
+- ✅ 拉取最新代码
+- ✅ 更新配置文件
+- ✅ 不管理服务器上的容器
+- ✅ 支持强制更新
+
+**使用场景：**
+- 升级代码和配置
+- 不重启容器
+- 配置后手动重启容器
+
+**用法：**
+```bash
+bash scripts/deploy/quick-upgrade.sh
+bash scripts/deploy/quick-upgrade.sh --force
+```
+
+**特点：**
+- 只更新代码
+- 不管理容器
+- 适合代码升级
+
+---
+
+### 8. `scripts/deploy/start-internal-services.sh` - 内网服务启动脚本
 
 **用途：** 只启动内网容器（MinIO、Redis、数据库等），不启动 Worker 和 Web
 
@@ -122,6 +212,58 @@ bash scripts/deploy/start-internal-services.sh
 - 轻量级启动
 - 自动适配不同的 docker-compose 配置
 - 仅内网访问（127.0.0.1）
+
+---
+
+### 9. `scripts/deploy/update-worker-on-server.sh` - Worker 更新脚本
+
+**用途：** 在服务器上拉取最新代码并更新 Worker 服务
+
+**功能：**
+- ✅ 拉取最新代码（可选）
+- ✅ 更新环境配置
+- ✅ 重新构建 Worker 镜像
+- ✅ 重启 Worker 服务
+
+**使用场景：**
+- 更新 Worker 服务
+- 应用代码更新
+
+**用法：**
+```bash
+bash scripts/deploy/update-worker-on-server.sh
+```
+
+**特点：**
+- 只更新 Worker
+- 不影响其他服务
+- 适合增量更新
+
+---
+
+### 10. `scripts/deploy/verify-deployment.sh` - 部署验证脚本
+
+**用途：** 端到端验证部署是否成功
+
+**功能：**
+- ✅ 检查所有服务状态
+- ✅ 测试 API 端点
+- ✅ 验证数据库连接
+- ✅ 验证存储连接
+
+**使用场景：**
+- 部署后验证
+- 故障排查
+
+**用法：**
+```bash
+bash scripts/deploy/verify-deployment.sh [SSH_HOST]
+```
+
+**特点：**
+- 全面验证
+- 自动化检查
+- 适合 CI/CD
 
 ---
 
@@ -248,9 +390,12 @@ docker-compose logs -f [服务名]
 
 | 场景 | 推荐脚本 | 说明 |
 |------|---------|------|
+| **首次部署，完全自动化** | **`one-click-deploy.sh`** | **无需任何配置，一键完成** ⭐ |
+| **首次部署，需要配置** | **`docker/deploy.sh`** | **引导式配置，适合新手** ⭐ |
 | 首次部署，需要引导 | `setup.sh` | 交互式菜单，适合新手 |
 | 快速部署到服务器 | `deploy.sh` | 自动化部署，支持远程 |
-| 完全自托管部署 | `docker/deploy.sh` | 详细的配置向导 |
+| 只生成配置 | `quick-deploy.sh` | 不管理容器，只生成配置 |
+| 只更新代码 | `quick-upgrade.sh` | 不管理容器，只更新代码 |
 | **只启动内网服务** | **`start-internal-services.sh`** | **轻量级，适合开发** |
 | 更新 Worker | `update-worker-on-server.sh` | 更新 Worker 服务 |
 | 验证部署 | `verify-deployment.sh` | 检查部署是否成功 |

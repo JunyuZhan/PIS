@@ -363,9 +363,6 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const workerUrl = process.env.WORKER_URL || process.env.WORKER_API_URL
     if (workerUrl) {
       try {
-        const requestUrl = new URL(request.url)
-        const protocol = requestUrl.protocol
-        const host = requestUrl.host
         const proxyUrl = `http://localhost:3000/api/worker/clear-album-cache`
         
         const headers: HeadersInit = {

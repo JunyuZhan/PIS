@@ -4,6 +4,9 @@ Thank you for your interest in contributing to PIS! This document provides guide
 
 ## Code of Conduct
 
+This project adheres to a [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please report unacceptable behavior to junyuzhan@outlook.com.
+
+**Key principles:**
 - Be respectful and inclusive
 - Welcome newcomers and help them learn
 - Focus on constructive feedback

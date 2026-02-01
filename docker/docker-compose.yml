@@ -80,8 +80,8 @@ services:
     env_file:
       - ../.env
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
     volumes:
       - pis_minio_data:/data
     command: server /data --console-address ":9001"
@@ -188,7 +188,7 @@ services:
       - WORKER_API_KEY=${WORKER_API_KEY:-changeme}
       # 存储公网 URL
       # STORAGE_PUBLIC_URL: 用于读取文件（通过 Next.js 代理）
-      - STORAGE_PUBLIC_URL=${STORAGE_PUBLIC_URL:-http://${DOMAIN:-localhost}:8080/media}
+      - STORAGE_PUBLIC_URL=${STORAGE_PUBLIC_URL:-http://${DOMAIN:-localhost}:8081/media}
       # MINIO_PUBLIC_URL: 不使用（MinIO API 不暴露），保留配置但无效
       - MINIO_PUBLIC_URL=${MINIO_PUBLIC_URL:-http://${DOMAIN:-localhost}:19000}
       # 告警配置
@@ -269,7 +269,7 @@ services:
     ports:
       # 唯一对外暴露端口，所有服务通过路径访问
       # 如需修改端口避免冲突，请同时更新环境变量 NEXT_PUBLIC_APP_URL
-      - "8080:3000" # HTTP 使用 8080（避开 80 端口冲突）
+      - "8081:3000" # HTTP 使用 8081（避开 80 端口冲突）
       # HTTPS 由内网穿透服务处理，不需要暴露 443
     depends_on:
       postgres:

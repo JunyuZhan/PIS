@@ -431,10 +431,10 @@ docker-compose up -d --build worker
 
 ```bash
 # 清除特定图片缓存
-./scripts/purge-cf-cache.sh "图片URL"
+tsx scripts/utils/purge-cloudflare-cache.ts --urls "图片URL"
 
 # 清除所有已删除照片的缓存
-tsx scripts/purge-deleted-photos-cache.ts
+tsx scripts/utils/purge-cloudflare-cache.ts --deleted-photos
 ```
 
 ---

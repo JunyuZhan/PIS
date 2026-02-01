@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { revalidatePath } from 'next/cache'
-import { createClient, createAdminClient } from '@/lib/database'
+import { createAdminClient } from '@/lib/database'
 import { getCurrentUser } from '@/lib/auth/api-helpers'
 import { restoreSchema } from '@/lib/validation/schemas'
 import { safeValidate, handleError, createSuccessResponse, ApiError } from '@/lib/validation/error-handler'
@@ -16,7 +16,6 @@ import { safeValidate, handleError, createSuccessResponse, ApiError } from '@/li
  */
 export async function POST(request: NextRequest) {
   try {
-    const db = await createClient()
     const adminClient = await createAdminClient()
 
     // 验证登录状态
@@ -68,10 +67,7 @@ export async function POST(request: NextRequest) {
     const restoreError = restoreResults.find((r) => r.error)?.error
 
     if (restoreError) {
-      return NextResponse.json(
-        { error: { code: 'DB_ERROR', message: restoreError.message } },
-        { status: 500 }
-      )
+      return ApiError.internal(`数据库更新失败: ${restoreError.message}`)
     }
 
     // 更新相册照片计数（重新统计 completed 状态且未删除的照片）

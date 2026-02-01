@@ -9,6 +9,7 @@
 | 脚本 | 描述 | 用法 |
 |------|------|------|
 | `create-admin.ts` | 创建管理员账户 | `tsx scripts/utils/create-admin.ts [email] [password]` |
+| `check-admin-status.ts` | 检查管理员账户状态 | `tsx scripts/utils/check-admin-status.ts` |
 | `cleanup-failed-photos.ts` | 清理失败的照片 | `tsx scripts/utils/cleanup-failed-photos.ts` |
 
 **示例**：
@@ -18,6 +19,9 @@ tsx scripts/utils/create-admin.ts
 
 # 创建管理员（非交互式）
 tsx scripts/utils/create-admin.ts admin@example.com your-password
+
+# 检查管理员账户状态
+tsx scripts/utils/check-admin-status.ts
 
 # 清理失败的照片
 tsx scripts/utils/cleanup-failed-photos.ts

@@ -69,9 +69,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     // 使用代理路由调用 Worker API 检查 MinIO 中的文件
     // 代理路由会自动处理 Worker URL 配置和认证
-    const requestUrl = new URL(request.url)
-    const protocol = requestUrl.protocol
-    const host = requestUrl.host
     const proxyUrl = `http://localhost:3000/api/worker/list-files`
     
     const headers: HeadersInit = {

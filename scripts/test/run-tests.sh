@@ -133,7 +133,7 @@ echo -e "${CYAN}[7/8] 安全检查...${NC}"
     echo "---"
     
     cd /Users/apple/Documents/Project/PIS/pis-standalone
-    bash scripts/check-security.sh 2>&1 | tee -a "$REPORT_FILE" || echo "安全检查完成（有警告）" | tee -a "$REPORT_FILE"
+    bash scripts/utils/check-security.sh 2>&1 | tee -a "$REPORT_FILE" || echo "安全检查完成（有警告）" | tee -a "$REPORT_FILE"
     echo ""
     echo ""
 } >> "$REPORT_FILE"

@@ -1,4 +1,3 @@
-import { NextResponse } from 'next/server'
 import { createSuccessResponse } from '@/lib/validation/error-handler'
 
 /**

@@ -98,9 +98,12 @@ export function usePhotoRealtime({
     const pollingInterval = parseInt(process.env.NEXT_PUBLIC_POLLING_INTERVAL || '5000', 10)
     const intervalId = setInterval(checkForUpdates, pollingInterval)
 
+    // 在effect开始时复制ref值，避免cleanup时ref已改变
+    const knownPhotoIds = knownPhotoIdsRef.current
+
     return () => {
       clearInterval(intervalId)
-      knownPhotoIdsRef.current.clear()
+      knownPhotoIds.clear()
     }
   }, [albumId, enabled, checkForUpdates])
 }
@@ -165,9 +168,12 @@ export function usePhotoRealtimeAdmin({
     const pollingInterval = parseInt(process.env.NEXT_PUBLIC_ADMIN_POLLING_INTERVAL || '3000', 10)
     const intervalId = setInterval(checkForStatusChanges, pollingInterval)
 
+    // 在effect开始时复制ref值，避免cleanup时ref已改变
+    const photoStatusMap = photoStatusMapRef.current
+
     return () => {
       clearInterval(intervalId)
-      photoStatusMapRef.current.clear()
+      photoStatusMap.clear()
     }
   }, [albumId, enabled, checkForStatusChanges])
 }

@@ -579,7 +579,7 @@ MinIO Bucket: pis-photos/
 
 4. **已删除照片仍可访问**
    - 原因: Cloudflare CDN 缓存
-   - 解决: 运行 `scripts/purge-deleted-photos-cache.ts` 清除缓存
+   - 解决: 运行 `tsx scripts/utils/purge-cloudflare-cache.ts --deleted-photos` 清除缓存
 
 ---
 
@@ -610,11 +610,11 @@ docker-compose up -d --build worker
 
 ```bash
 # 清除特定图片缓存
-./scripts/purge-cf-cache.sh \
+tsx scripts/utils/purge-cloudflare-cache.ts --urls \
   "https://media.example.com/pis-photos/processed/previews/xxx/xxx.jpg"
 
 # 清除所有已删除照片的缓存
-tsx scripts/purge-deleted-photos-cache.ts
+tsx scripts/utils/purge-cloudflare-cache.ts --deleted-photos
 ```
 
 ---

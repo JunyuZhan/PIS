@@ -16,7 +16,7 @@ PIS 使用以下设计字体：
 ### 一键设置字体文件
 
 ```bash
-bash scripts/setup-fonts.sh
+bash scripts/utils/setup-fonts.sh
 ```
 
 这个脚本会：
@@ -78,7 +78,7 @@ Error: Cannot find module './fonts/Inter-Regular.woff2'
 
 **解决方案**：
 1. 检查字体文件是否存在：`ls apps/web/src/app/fonts/`
-2. 如果文件不存在，运行：`bash scripts/setup-fonts.sh`
+2. 如果文件不存在，运行：`bash scripts/utils/setup-fonts.sh`
 3. 如果脚本失败，手动下载字体文件（见上方手动下载方式）
 
 ### 问题 2: 字体文件解码错误
@@ -90,7 +90,7 @@ Error: Cannot find module './fonts/Inter-Regular.woff2'
 **解决方案**：
 1. **重新下载字体文件**（推荐）：
    ```bash
-   bash scripts/setup-fonts.sh
+   bash scripts/utils/setup-fonts.sh
    ```
 
 2. **验证字体文件大小**：
@@ -113,7 +113,7 @@ Error: Cannot find module './fonts/Inter-Regular.woff2'
 1. **在本地下载字体文件**：
    ```bash
    # 在本地机器运行
-   bash scripts/setup-fonts.sh
+   bash scripts/utils/setup-fonts.sh
    ```
 
 2. **上传字体文件到服务器**：

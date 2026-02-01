@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient, createAdminClient } from '@/lib/database'
+import { NextRequest } from 'next/server'
+import { createAdminClient } from '@/lib/database'
 import { getCurrentUser } from '@/lib/auth/api-helpers'
 import { photoIdSchema } from '@/lib/validation/schemas'
 import { safeValidate, handleError, createSuccessResponse, ApiError } from '@/lib/validation/error-handler'
@@ -28,7 +28,6 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
     
     const { id: photoId } = idValidation.data
-    const db = await createClient()
 
     // 验证登录状态
     const user = await getCurrentUser(request)
@@ -67,9 +66,6 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       try {
         // 使用代理路由调用 Worker API
         // 代理路由会自动处理 Worker URL 配置和认证
-        const requestUrl = new URL(request.url)
-        const protocol = requestUrl.protocol
-        const host = requestUrl.host
         const proxyUrl = `http://localhost:3000/api/worker/cleanup-file`
         
         const headers: HeadersInit = {

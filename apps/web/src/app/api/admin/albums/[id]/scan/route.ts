@@ -45,9 +45,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     // 使用代理路由调用 Worker 扫描 API
     // 代理路由会自动处理 Worker URL 配置和认证
-    const requestUrl = new URL(request.url)
-    const protocol = requestUrl.protocol
-    const host = requestUrl.host
     const proxyUrl = `http://localhost:3000/api/worker/scan`
     
     const headers: HeadersInit = {

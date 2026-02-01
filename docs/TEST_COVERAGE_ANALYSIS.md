@@ -129,7 +129,7 @@ apps/web/src/components/
 ### 3. 浏览器兼容性测试 ✅ 配置完成
 
 **现状**:
-- ✅ **已创建**: 浏览器兼容性测试脚本（`scripts/test-browser-compat.sh`）
+- ✅ **已创建**: 浏览器兼容性测试脚本（`scripts/test/test-browser-compat.sh`）
 - ✅ **配置完成**: Playwright 支持多浏览器（Chrome, Firefox, Safari）
 - ✅ **配置完成**: 移动端浏览器测试（iPhone, Android）
 - ⚠️ **进行中**: 需要运行测试验证
@@ -252,7 +252,7 @@ apps/web/src/components/
 ### 9. 边界情况测试 ✅ 部分实现
 
 **现状**:
-- ✅ **已创建**: 边界情况测试脚本（`scripts/test-edge-cases.sh`）
+- ✅ **已创建**: 边界情况测试脚本（`scripts/test/test-edge-cases.sh`）
 - ✅ **已实现**: 超长文本、特殊字符、数值边界、并发请求、无效UUID、编码测试
 - ⚠️ **进行中**: 需要更多极端场景测试
 
@@ -484,23 +484,23 @@ for (const device of [devices['iPhone 13'], devices['Pixel 5']]) {
 
 ### ✅ 已创建的测试脚本
 
-1. ✅ **`scripts/test-components.sh`** - 前端组件测试
-2. ✅ **`scripts/test-e2e.sh`** - E2E 测试
-3. ✅ **`scripts/test-mobile.sh`** - 移动端测试
-4. ✅ **`scripts/test-edge-cases.sh`** - 边界情况测试
-5. ✅ **`scripts/test-browser-compat.sh`** - 浏览器兼容性测试
+1. ✅ **`scripts/test/test-components.sh`** - 前端组件测试
+2. ✅ **`scripts/test/test-e2e.sh`** - E2E 测试
+3. ✅ **`scripts/test/test-mobile.sh`** - 移动端测试
+4. ✅ **`scripts/test/test-edge-cases.sh`** - 边界情况测试
+5. ✅ **`scripts/test/test-browser-compat.sh`** - 浏览器兼容性测试
 
 ### ⚠️ 待创建的测试脚本
 
-6. ⚠️ **`scripts/test-error-recovery.sh`** - 错误恢复测试
-7. ⚠️ **`scripts/test-pwa.sh`** - PWA 功能测试
-8. ⚠️ **`scripts/test-i18n.sh`** - 多语言测试
+6. ⚠️ **`scripts/test/test-error-recovery.sh`** - 错误恢复测试（待实现）
+7. ⚠️ **`scripts/test/test-pwa.sh`** - PWA 功能测试（待实现）
+8. ⚠️ **`scripts/test/test-i18n.sh`** - 多语言测试（待实现）
 
 ---
 
 ## 📚 相关文档
 
-- [测试指南](./TESTING_GUIDE.md) - 现有测试指南
+- [测试指南](./TESTING.md) - 完整测试指南
 - [完整测试总结](./COMPLETE_TEST_SUMMARY.md) - 测试结果汇总
 - [360度测试报告](./360_DEGREE_TESTING.md) - 全面测试报告
 

@@ -56,5 +56,5 @@ bash scripts/test/test-components.sh
 ## 📖 测试文档
 
 更多测试相关信息请参考：
-- [测试指南](../../docs/TESTING_GUIDE.md)
+- [测试指南](../../docs/TESTING.md)
 - [测试覆盖率分析](../../docs/TEST_COVERAGE_ANALYSIS.md)

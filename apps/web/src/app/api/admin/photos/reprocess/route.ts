@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { createClient } from '@/lib/database'
 import { getCurrentUser } from '@/lib/auth/api-helpers'
 import { reprocessPhotoSchema } from '@/lib/validation/schemas'
@@ -81,9 +81,6 @@ export async function POST(request: NextRequest) {
 
     // 使用代理路由调用 Worker API 触发重新处理
     // 代理路由会自动处理 Worker URL 配置和认证
-    const requestUrl = new URL(request.url)
-    const protocol = requestUrl.protocol
-    const host = requestUrl.host
     const proxyUrl = `http://localhost:3000/api/worker/process`
 
     // 批量添加到处理队列

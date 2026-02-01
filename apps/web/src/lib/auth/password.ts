@@ -81,7 +81,7 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
     // 使用同步版本避免 Next.js 15 worker thread 问题
     const derivedKey = crypto.pbkdf2Sync(password, salt, iterCount, keylen, digest)
     return derivedKey.toString('hex') === storedHash
-  } catch (err) {
+  } catch {
     return false
   }
 }

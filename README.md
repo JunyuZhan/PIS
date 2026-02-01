@@ -114,7 +114,7 @@
 
 ```bash
 # One command to deploy everything (no interaction required)
-curl -sSL https://raw.githubusercontent.com/JunyuZhan/pis-standalone/main/scripts/one-click-deploy.sh | bash
+curl -sSL https://raw.githubusercontent.com/JunyuZhan/pis-standalone/main/scripts/deploy/one-click-deploy.sh | bash
 ```
 
 This script will automatically:
@@ -127,8 +127,10 @@ This script will automatically:
 **📋 Interactive Deployment (Guided Setup)**
 
 ```bash
-# Interactive configuration wizard
-curl -sSL https://raw.githubusercontent.com/JunyuZhan/pis-standalone/main/scripts/install.sh | tr -d '\r' | bash
+# Clone repository and run interactive configuration wizard
+git clone https://github.com/JunyuZhan/pis-standalone.git
+cd pis-standalone/docker
+bash deploy.sh
 ```
 
 Or manually:
@@ -214,6 +216,8 @@ pnpm test       # Run tests
 
 MIT License © 2026 junyuzhan - See [LICENSE](LICENSE) for details
 
+See [CHANGELOG.md](CHANGELOG.md) for version history and release notes.
+
 ---
 
 ## 👤 Author & Contributing
@@ -221,6 +225,8 @@ MIT License © 2026 junyuzhan - See [LICENSE](LICENSE) for details
 **junyuzhan** - [GitHub](https://github.com/junyuzhan) - junyuzhan@outlook.com
 
 Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) and [AUTHORS.md](AUTHORS.md)
+
+Please read our [Code of Conduct](CODE_OF_CONDUCT.md) before contributing.
 
 ---
 

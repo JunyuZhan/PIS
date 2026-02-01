@@ -57,8 +57,13 @@ export async function GET(
     // 检查文件是否存在
     try {
       await minioClient.statObject(bucket, path)
-    } catch (statError: any) {
-      if (statError.code === 'NotFound' || statError.code === 'NoSuchKey') {
+    } catch (statError: unknown) {
+      if (
+        statError &&
+        typeof statError === 'object' &&
+        'code' in statError &&
+        (statError.code === 'NotFound' || statError.code === 'NoSuchKey')
+      ) {
         return new NextResponse(null, { status: 404 })
       }
       throw statError
@@ -103,12 +108,17 @@ export async function GET(
     responseHeaders.set('Accept-Ranges', 'bytes')
     
     // 流式传输响应体（避免内存占用过大）
-    return new NextResponse(stream as any, {
+    return new NextResponse(stream as unknown as ReadableStream, {
       status: 200,
       headers: responseHeaders,
     })
-  } catch (error: any) {
-    if (error.code === 'NotFound' || error.code === 'NoSuchKey') {
+  } catch (error: unknown) {
+    if (
+      error &&
+      typeof error === 'object' &&
+      'code' in error &&
+      (error.code === 'NotFound' || error.code === 'NoSuchKey')
+    ) {
       return new NextResponse(null, { status: 404 })
     }
     console.error('[Media Proxy] Error:', error)
@@ -174,8 +184,13 @@ export async function HEAD(
       status: 200,
       headers: responseHeaders,
     })
-  } catch (error: any) {
-    if (error.code === 'NotFound' || error.code === 'NoSuchKey') {
+  } catch (error: unknown) {
+    if (
+      error &&
+      typeof error === 'object' &&
+      'code' in error &&
+      (error.code === 'NotFound' || error.code === 'NoSuchKey')
+    ) {
       return new NextResponse(null, { status: 404 })
     }
     console.error('[Media Proxy HEAD] Error:', error)

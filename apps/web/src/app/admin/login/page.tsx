@@ -66,7 +66,7 @@ export default function LoginPage() {
       // 确保正确处理布尔值（防止字符串 "true"/"false"）
       const needsSetup = data.needsPasswordSetup === true || data.needsPasswordSetup === 'true'
       setNeedsPasswordSetup(needsSetup)
-    } catch (error) {
+    } catch {
       // 网络错误或其他错误，默认显示登录表单（更安全）
       setNeedsPasswordSetup(false)
     } finally {

@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { jwtVerify } from 'jose'
-import { createSuccessResponse, handleError } from '@/lib/validation/error-handler'
+import { createSuccessResponse } from '@/lib/validation/error-handler'
 
 /**
  * 获取当前用户信息 API
@@ -29,7 +29,7 @@ import { createSuccessResponse, handleError } from '@/lib/validation/error-handl
  * }
  * ```
  */
-export async function GET(_request: NextRequest) {
+export async function GET() {
   try {
     const cookieStore = await cookies()
     const authToken = cookieStore.get('pis-auth-token')?.value
@@ -58,7 +58,7 @@ export async function GET(_request: NextRequest) {
       // Token 无效
       return createSuccessResponse({ user: null })
     }
-  } catch (error) {
+  } catch {
     return createSuccessResponse({ user: null })
   }
 }

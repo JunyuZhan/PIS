@@ -104,8 +104,9 @@ export default async function HomePage() {
     }
     
     // 创建封面照片映射
+    const coverPhotos = (coverPhotosResult.data || []) as Array<{ id: string; thumb_key: string | null; preview_key: string | null }>
     const coverMap = new Map(
-      (coverPhotosResult.data || []).map((photo: any) => [
+      coverPhotos.map((photo) => [
         photo.id,
         { thumb_key: photo.thumb_key, preview_key: photo.preview_key }
       ])
@@ -137,7 +138,7 @@ export default async function HomePage() {
     const firstPhotoMap = new Map<string, { thumb_key: string | null; preview_key: string | null }>()
     if (firstPhotosResult.data) {
       const seenAlbums = new Set<string>()
-      for (const photo of firstPhotosResult.data as any[]) {
+      for (const photo of firstPhotosResult.data as Array<{ album_id: string; thumb_key: string | null; preview_key: string | null }>) {
         if (!seenAlbums.has(photo.album_id)) {
           firstPhotoMap.set(photo.album_id, {
             thumb_key: photo.thumb_key,

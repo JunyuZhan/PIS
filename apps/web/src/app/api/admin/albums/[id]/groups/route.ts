@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/database'
 import { getCurrentUser } from '@/lib/auth/api-helpers'
 import type { PhotoGroupInsert } from '@/types/database'

@@ -461,20 +461,46 @@ main() {
     # 2. 安装 Docker Compose
     install_docker_compose
     
-    # 3. 检测项目目录
-    detect_project_dir
+# 3. 检测项目目录
+detect_project_dir() {
+    # 如果当前目录是项目目录
+    if [ -f "docker/deploy.sh" ] || [ -f "docker/docker-compose.standalone.yml" ]; then
+        PROJECT_DIR="$(pwd)"
+        export PROJECT_DIR
+        success "检测到项目目录: $PROJECT_DIR"
+        return 0
+    fi
     
-    # 4. 生成配置文件
-    generate_config
+    # 否则使用默认目录
+    PROJECT_DIR="${DEPLOY_DIR:-/opt/pis}"
+    export PROJECT_DIR
     
-    # 5. 启动服务
-    start_services
+    # 如果目录不存在，克隆代码
+    if [ ! -d "$PROJECT_DIR" ]; then
+        info "正在克隆代码到 $PROJECT_DIR..."
+        
+        # 检查 Git
+        if ! command -v git &> /dev/null; then
+            warn "Git 未安装，正在安装..."
+            if command -v apt-get &> /dev/null; then
+                apt-get update && apt-get install -y git
+            elif command -v yum &> /dev/null; then
+                yum install -y git
+            fi
+        fi
+        
+        GITHUB_REPO="${GITHUB_REPO:-https://github.com/JunyuZhan/pis-standalone.git}"
+        GITHUB_BRANCH="${GITHUB_BRANCH:-main}"
+        
+        git clone -b ${GITHUB_BRANCH} ${GITHUB_REPO} ${PROJECT_DIR}
+        success "代码克隆完成"
+    else
+        info "目录已存在: $PROJECT_DIR"
+        info "更新代码..."
+        cd ${PROJECT_DIR} && git pull || true
+    fi
     
-    # 6. 创建管理员账户
-    create_admin
-    
-    # 7. 显示完成信息
-    show_completion
+    cd ${PROJECT_DIR}
 }
 
 # 运行主函数

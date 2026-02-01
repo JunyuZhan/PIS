@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient, createAdminClient } from '@/lib/database'
+import { NextRequest } from 'next/server'
+import { createAdminClient } from '@/lib/database'
 import { getCurrentUser } from '@/lib/auth/api-helpers'
 import { purgePhotoCache } from '@/lib/cloudflare-purge'
 import { revalidatePath } from 'next/cache'
@@ -18,8 +18,6 @@ import { safeValidate, handleError, createSuccessResponse, ApiError } from '@/li
  */
 export async function POST(request: NextRequest) {
   try {
-    const db = await createClient()
-
     // 验证登录状态
     const user = await getCurrentUser(request)
 
@@ -87,9 +85,6 @@ export async function POST(request: NextRequest) {
     )
 
     // 1. 删除 MinIO 文件（通过 Worker API）
-    const requestUrl = new URL(request.url)
-    const protocol = requestUrl.protocol
-    const host = requestUrl.host
     const proxyUrl = `http://localhost:3000/api/worker/cleanup-file`
 
     const headers: HeadersInit = {

@@ -23,19 +23,24 @@
 
 ## 快速开始（一键部署）
 
-### 方法一：一键安装（推荐）
+### 方法一：完全自动化部署（推荐）
 
 ```bash
-# 复制粘贴到终端执行
-curl -sSL https://raw.githubusercontent.com/JunyuZhan/pis-standalone/main/scripts/install.sh | bash
-
-# 国内用户（使用代理加速）
-curl -sSL https://ghproxy.com/https://raw.githubusercontent.com/JunyuZhan/pis-standalone/main/scripts/install.sh | bash
+# 一键部署，无需任何配置
+curl -sSL https://raw.githubusercontent.com/JunyuZhan/pis-standalone/main/scripts/deploy/one-click-deploy.sh | bash
 ```
 
-### 方法二：手动安装
+此脚本会自动完成：
+- ✅ 安装 Docker 和 Docker Compose（如果未安装）
+- ✅ 克隆代码（如果不在项目目录）
+- ✅ 生成所有配置文件和安全密钥
+- ✅ 启动所有服务
+- ✅ 创建管理员账户
+
+### 方法二：交互式配置部署
 
 ```bash
+# 克隆代码并运行交互式配置向导
 git clone https://github.com/JunyuZhan/pis-standalone.git
 cd pis-standalone/docker
 bash deploy.sh
@@ -115,7 +120,7 @@ cd ..
 pnpm create-admin
 
 # 或直接运行
-pnpm exec tsx scripts/create-admin.ts
+pnpm exec tsx scripts/utils/create-admin.ts
 ```
 
 ### 5. 启动服务

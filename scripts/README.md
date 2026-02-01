@@ -18,8 +18,11 @@ scripts/
 
 **快速开始**：
 ```bash
-# 一键部署（推荐）
-bash scripts/deploy/install.sh
+# 一键部署（完全自动化，推荐）
+bash scripts/deploy/one-click-deploy.sh
+
+# 或交互式配置部署
+cd docker && bash deploy.sh
 
 # 或从本地部署到远程服务器
 bash scripts/deploy/deploy.sh <服务器IP> [用户名]
@@ -72,7 +75,13 @@ bash scripts/utils/setup-fonts.sh
 
 ### 一键部署
 ```bash
-curl -sSL https://raw.githubusercontent.com/JunyuZhan/pis-standalone/main/scripts/deploy/install.sh | bash
+# 完全自动化部署（推荐）
+curl -sSL https://raw.githubusercontent.com/JunyuZhan/pis-standalone/main/scripts/deploy/one-click-deploy.sh | bash
+
+# 或交互式配置部署
+git clone https://github.com/JunyuZhan/pis-standalone.git
+cd pis-standalone/docker
+bash deploy.sh
 ```
 
 ### 本地开发环境设置

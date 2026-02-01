@@ -241,7 +241,7 @@ print_section "8️⃣  安全测试"
 
 if [ "$SKIP_SECURITY" = false ]; then
     # 运行安全检查脚本
-    test_check "运行安全检查脚本" "cd /Users/apple/Documents/Project/PIS/pis-standalone && bash scripts/check-security.sh" true
+    test_check "运行安全检查脚本" "cd /Users/apple/Documents/Project/PIS/pis-standalone && bash scripts/utils/check-security.sh" true
     
     # SQL 注入测试（登录端点）
     echo -e "${YELLOW}进行 SQL 注入测试...${NC}"

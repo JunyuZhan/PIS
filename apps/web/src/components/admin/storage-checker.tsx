@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { CheckCircle2, AlertCircle, Loader2, RefreshCw, Database, FileX, HardDrive } from 'lucide-react'
+import { CheckCircle2, AlertCircle, Loader2, RefreshCw, FileX, HardDrive } from 'lucide-react'
 import { showSuccess, handleApiError } from '@/lib/toast'
 
 interface StorageCheckResult {
@@ -53,8 +53,8 @@ export function StorageChecker({ albumId }: StorageCheckerProps) {
       const data = await response.json()
       setResult(data)
       showSuccess('存储检查完成')
-    } catch (error) {
-      handleApiError(error, '执行存储检查失败')
+    } catch {
+      handleApiError(new Error('执行存储检查失败'), '执行存储检查失败')
     } finally {
       setLoading(false)
     }

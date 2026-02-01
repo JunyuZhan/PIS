@@ -78,3 +78,22 @@ vi.mock('next/dynamic', () => ({
     }
   },
 }))
+
+// Mock IntersectionObserver
+class MockIntersectionObserver implements IntersectionObserver {
+  callback: IntersectionObserverCallback
+  root: Element | null = null
+  rootMargin: string = ''
+  thresholds: ReadonlyArray<number> = []
+
+  constructor(callback: IntersectionObserverCallback) {
+    this.callback = callback
+  }
+
+  observe = vi.fn()
+  unobserve = vi.fn()
+  disconnect = vi.fn()
+  takeRecords = vi.fn(() => [])
+}
+
+global.IntersectionObserver = MockIntersectionObserver as any

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@/lib/auth/api-helpers'
 import { handleError, createSuccessResponse, ApiError } from '@/lib/validation/error-handler'
 

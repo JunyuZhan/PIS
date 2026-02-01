@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import { createClient } from '@/lib/database'
 import { AlbumList } from '@/components/admin/album-list'
 import { AlbumCardSkeleton } from '@/components/ui/skeleton'
+import type { Album, Photo } from '@/types/database'
 
 /**
  * 相册列表页 (管理后台首页)
@@ -16,10 +17,12 @@ export default async function AdminPage() {
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
 
-  const albumsData = albumsResult.data || []
+  const albumsData = (albumsResult.data || []) as Album[]
 
   // 获取封面图的 key（只获取已处理完成的照片）
-  const coverPhotoIds = albumsData.map((a: any) => a.cover_photo_id).filter(Boolean) || []
+  const coverPhotoIds = albumsData
+    .map((a) => a.cover_photo_id)
+    .filter((id): id is string => Boolean(id))
   let coverPhotosMap: Record<string, string> = {}
 
   if (coverPhotoIds.length > 0) {
@@ -30,7 +33,8 @@ export default async function AdminPage() {
       .eq('status', 'completed')
 
     if (photosResult.data) {
-      coverPhotosMap = photosResult.data.reduce((acc: Record<string, string>, photo: any) => {
+      const photos = photosResult.data as Array<Pick<Photo, 'id' | 'thumb_key'>>
+      coverPhotosMap = photos.reduce((acc: Record<string, string>, photo) => {
         if (photo.thumb_key) {
           acc[photo.id] = photo.thumb_key
         }
@@ -40,7 +44,7 @@ export default async function AdminPage() {
   }
 
   // 统计每个相册的实际 completed 照片数量
-  const albumIds = albumsData.map((a: any) => a.id) || []
+  const albumIds = albumsData.map((a) => a.id) || []
   const photoCountMap: Record<string, number> = {}
   const albumsToUpdate: { id: string; count: number }[] = []
 
@@ -55,13 +59,14 @@ export default async function AdminPage() {
 
     if (photoCountsResult.data) {
       // 统计每个相册的照片数量
-      photoCountsResult.data.forEach((p: any) => {
+      const photoCounts = photoCountsResult.data as Array<Pick<Photo, 'album_id'>>
+      photoCounts.forEach((p) => {
         photoCountMap[p.album_id] = (photoCountMap[p.album_id] || 0) + 1
       })
     }
 
     // 检查哪些相册的计数不一致
-    albumsData.forEach((album: any) => {
+    albumsData.forEach((album) => {
       const actualCount = photoCountMap[album.id] || 0
       if (actualCount !== album.photo_count) {
         albumsToUpdate.push({ id: album.id, count: actualCount })
@@ -74,7 +79,7 @@ export default async function AdminPage() {
     }
   }
 
-  const albums = albumsData.map((album: any) => ({
+  const albums = albumsData.map((album) => ({
     ...album,
     photo_count: photoCountMap[album.id] ?? album.photo_count ?? 0,
     cover_thumb_key: album.cover_photo_id ? coverPhotosMap[album.cover_photo_id] : null,

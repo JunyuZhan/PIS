@@ -36,9 +36,12 @@ cd pis-standalone
 # 2. 安装依赖
 pnpm install
 
-# 3. 启动基础服务 (MinIO + Redis)
+# 3. 启动基础服务（推荐：使用快捷脚本）
+pnpm dev:services
+
+# 或手动启动
 cd docker
-docker-compose up -d minio redis minio-init
+docker-compose -f docker-compose.dev.yml up -d
 cd ..
 
 # 4. 配置环境变量（统一使用根目录配置）
@@ -52,6 +55,29 @@ psql -U pis -d pis -f docker/init-postgresql-db.sql
 # 6. 启动开发服务器
 pnpm dev
 ```
+
+### 快速启动开发环境（无需每次构建容器）
+
+**方式 1: 使用快捷脚本（推荐）**
+
+```bash
+# 启动基础服务（只需一次）
+pnpm dev:services
+
+# 这会启动：
+# - PostgreSQL (端口 5432)
+# - MinIO (API: 9000, Console: 9001)
+# - Redis (端口 6379)
+```
+
+**方式 2: 手动启动**
+
+```bash
+cd docker
+docker-compose -f docker-compose.dev.yml up -d
+```
+
+**重要**: 开发环境必须使用 `localhost` 作为数据库主机名，而不是 `postgres`（`postgres` 是 Docker 容器内的主机名）。
 
 ### 环境变量配置
 
@@ -220,9 +246,9 @@ docker-compose logs -f worker     # 查看 Worker 日志
 docker-compose down               # 停止所有服务
 
 # 测试
-bash scripts/test-system.sh       # 基础功能测试
-bash scripts/test-api.sh          # API 功能测试
-bash scripts/run-all-tests.sh     # 运行所有测试
+bash scripts/test/test-all.sh           # 运行所有测试
+bash scripts/test/test-api-endpoints.sh # API 功能测试
+bash scripts/test/comprehensive-test.sh # 综合测试
 ```
 
 ---

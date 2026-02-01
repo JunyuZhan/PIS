@@ -30,7 +30,7 @@
  */
 import { cookies } from 'next/headers'
 // JWT 函数从 jwt.ts 导入（Edge Runtime 兼容）
-import { createAccessToken, createRefreshToken, verifyToken, COOKIE_NAME, REFRESH_COOKIE_NAME, type AuthUser as JwtAuthUser, type JWTPayload } from './jwt'
+import { createAccessToken, createRefreshToken, verifyToken, COOKIE_NAME, REFRESH_COOKIE_NAME, type JWTPayload } from './jwt'
 // 密码哈希函数从 password.ts 导入（避免在 Edge Runtime 中导入 Node.js crypto）
 export { hashPassword, verifyPassword } from './password'
 // Middleware 辅助函数从 jwt-helpers.ts 导入（Edge Runtime 兼容）

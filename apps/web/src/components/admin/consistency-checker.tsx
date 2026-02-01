@@ -107,7 +107,7 @@ export function ConsistencyChecker() {
               checked={options.deleteOrphanedRecords}
               onChange={(e) => {
                 if (e.target.checked && !options.autoFix) {
-                  alert('删除孤立记录需要同时启用"自动修复不一致记录"')
+                  alert('删除孤立记录需要同时启用&ldquo;自动修复不一致记录&rdquo;')
                   return
                 }
                 setOptions({ ...options, deleteOrphanedRecords: e.target.checked })
@@ -120,7 +120,7 @@ export function ConsistencyChecker() {
               <p className="text-xs text-text-muted mt-1">
                 删除数据库中存在但存储中没有对应文件的记录（需要同时启用自动修复）
                 {!options.autoFix && (
-                  <span className="text-yellow-500 block mt-1">⚠️ 请先启用"自动修复不一致记录"</span>
+                  <span className="text-yellow-500 block mt-1">⚠️ 请先启用&ldquo;自动修复不一致记录&rdquo;</span>
                 )}
               </p>
             </div>

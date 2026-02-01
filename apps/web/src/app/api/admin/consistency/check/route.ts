@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
       
       // 计算修复数量（标记为重新处理或删除的记录数）
       const fixedCount = result.details?.inconsistentPhotos?.filter(
-        (p: any) => p.action === 'marked_for_reprocessing' || p.action === 'deleted_orphaned_record'
+        (p: { action?: string }) => p.action === 'marked_for_reprocessing' || p.action === 'deleted_orphaned_record'
       ).length || 0
       
       const formattedResult = {

@@ -4,11 +4,11 @@
  * 
  * 使用方法:
  *   pnpm create-admin
- *   pnpm exec tsx scripts/create-admin.ts
- *   tsx scripts/create-admin.ts
+ *   pnpm exec tsx scripts/utils/create-admin.ts
+ *   tsx scripts/utils/create-admin.ts
  * 
  * 或指定邮箱和密码（非交互式）:
- *   tsx scripts/create-admin.ts admin@example.com your-password
+ *   tsx scripts/utils/create-admin.ts admin@example.com your-password
  */
 
 import * as dotenv from 'dotenv'

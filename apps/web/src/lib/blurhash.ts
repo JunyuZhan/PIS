@@ -71,7 +71,7 @@ async function loadBlurhashModule() {
       blurhashModule = blurhash
       return blurhashModule
     }
-  } catch (error) {
+  } catch {
     // 模块加载失败（可能在服务端或模块不存在）
     return null
   }
@@ -116,8 +116,8 @@ export async function getBlurDataURL(
     ctx.putImageData(imageData, 0, 0)
 
     return canvas.toDataURL()
-  } catch (error) {
-    console.warn("Failed to decode BlurHash:", error)
+  } catch {
+    console.warn("Failed to decode BlurHash")
     return undefined
   }
 }
