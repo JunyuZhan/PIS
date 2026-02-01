@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 解析请求体
-    let body: { skipRestart?: boolean } = {}
+    let body: { skipRestart?: boolean; rebuildImages?: boolean } = {}
     try {
       const bodyText = await request.text()
       if (bodyText) {
@@ -106,6 +106,9 @@ export async function POST(request: NextRequest) {
     const args: string[] = []
     if (body.skipRestart) {
       args.push('--no-restart')
+    }
+    if (body.rebuildImages) {
+      args.push('--rebuild')
     }
 
     // 创建流式响应

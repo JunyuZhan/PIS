@@ -14,6 +14,7 @@
 #   bash scripts/deploy/quick-upgrade.sh
 #   bash scripts/deploy/quick-upgrade.sh --force
 #   bash scripts/deploy/quick-upgrade.sh --no-restart  # 不重启容器
+#   bash scripts/deploy/quick-upgrade.sh --rebuild    # 重新构建镜像（无缓存）
 # ============================================
 
 set -e
@@ -31,6 +32,7 @@ NC='\033[0m'
 FORCE_UPDATE=false
 REGENERATE_SECRETS=false
 RESTART_CONTAINERS=true
+REBUILD_IMAGES=false
 COMPOSE_CMD=""
 
 # 检测项目根目录
@@ -130,6 +132,29 @@ update_env_secret() {
     fi
 }
 
+# 显示重新构建镜像的提示信息
+show_rebuild_info() {
+    echo ""
+    echo -e "${YELLOW}📦 关于重新构建镜像：${NC}"
+    echo ""
+    echo -e "${CYAN}以下情况建议使用 --rebuild 选项重新构建镜像：${NC}"
+    echo ""
+    echo -e "  • ${BOLD}依赖项更新${NC}：package.json、pnpm-lock.yaml 等依赖文件有变更"
+    echo -e "  • ${BOLD}Dockerfile 修改${NC}：docker/web.Dockerfile 或 docker/worker.Dockerfile 有变更"
+    echo -e "  • ${BOLD}环境变量变更${NC}：构建时使用的环境变量（如 NEXT_PUBLIC_*）有变更"
+    echo -e "  • ${BOLD}源代码结构变更${NC}：项目目录结构或构建配置有重大变更"
+    echo -e "  • ${BOLD}镜像损坏或异常${NC}：容器启动失败或运行时出现异常"
+    echo ""
+    echo -e "${CYAN}以下情况通常不需要重新构建镜像：${NC}"
+    echo ""
+    echo -e "  • ${BOLD}仅配置文件更新${NC}：.env 文件或应用配置变更"
+    echo -e "  • ${BOLD}仅数据库变更${NC}：数据库结构或数据变更"
+    echo -e "  • ${BOLD}仅代码更新${NC}：仅更新了源代码，但依赖和构建配置未变"
+    echo ""
+    echo -e "${YELLOW}提示：${NC}如果不确定，可以先不使用 --rebuild，如果升级后出现问题再重新构建"
+    echo ""
+}
+
 # 解析参数
 for arg in "$@"; do
     case $arg in
@@ -141,11 +166,42 @@ for arg in "$@"; do
             RESTART_CONTAINERS=false
             shift
             ;;
+        --rebuild)
+            REBUILD_IMAGES=true
+            shift
+            ;;
+        --help|-h)
+            echo "用法: $0 [选项]"
+            echo ""
+            echo "选项:"
+            echo "  --force          强制更新，自动暂存未提交的更改"
+            echo "  --no-restart     不重启 Docker 容器"
+            echo "  --rebuild        重新构建镜像（无缓存），适用于依赖或 Dockerfile 变更"
+            echo "  --help, -h       显示此帮助信息"
+            echo ""
+            show_rebuild_info
+            exit 0
+            ;;
         *)
+            warn "未知参数: $arg"
+            warn "使用 --help 查看帮助信息"
             shift
             ;;
     esac
 done
+
+# 如果没有使用 --rebuild，显示提示信息
+if [ "$REBUILD_IMAGES" != true ] && [ "$FORCE_UPDATE" != true ]; then
+    show_rebuild_info
+    echo -e "${CYAN}是否要重新构建镜像？${NC}"
+    echo -e "  如果依赖、Dockerfile 或构建配置有变更，建议重新构建"
+    echo ""
+    read -p "重新构建镜像？(y/N): " rebuild_confirm
+    if [ "$rebuild_confirm" = "y" ] || [ "$rebuild_confirm" = "Y" ]; then
+        REBUILD_IMAGES=true
+        echo ""
+    fi
+fi
 
 # 检查项目目录
 check_project_dir() {
@@ -390,23 +446,47 @@ restart_containers() {
     info "使用配置文件: $compose_file"
     
     # 重新构建并重启容器
-    info "重新构建并重启容器..."
-    if $COMPOSE_CMD -f "$compose_file" up -d --build; then
-        success "容器重启成功"
-        
-        # 等待服务启动
-        info "等待服务启动..."
-        sleep 10
-        
-        # 检查服务状态
-        info "检查服务状态..."
-        $COMPOSE_CMD -f "$compose_file" ps
-        
-        return 0
+    if [ "$REBUILD_IMAGES" = true ]; then
+        info "重新构建镜像（无缓存）..."
+        if $COMPOSE_CMD -f "$compose_file" build --no-cache; then
+            success "镜像构建完成"
+            info "启动容器..."
+            if $COMPOSE_CMD -f "$compose_file" up -d; then
+                success "容器启动成功"
+            else
+                error "容器启动失败"
+                return 1
+            fi
+        else
+            error "镜像构建失败（无缓存）"
+            warn "请检查构建日志，修复问题后重试"
+            return 1
+        fi
     else
-        warn "容器重启失败，请手动检查"
-        return 1
+        info "重新构建并重启容器（使用缓存）..."
+        if $COMPOSE_CMD -f "$compose_file" up -d --build; then
+            success "容器重启成功"
+        else
+            warn "使用缓存构建失败，尝试无缓存重新构建..."
+            if $COMPOSE_CMD -f "$compose_file" build --no-cache && \
+               $COMPOSE_CMD -f "$compose_file" up -d; then
+                success "容器重启成功（已重新构建镜像）"
+            else
+                error "容器启动失败"
+                return 1
+            fi
+        fi
     fi
+    
+    # 等待服务启动
+    info "等待服务启动..."
+    sleep 10
+    
+    # 检查服务状态
+    info "检查服务状态..."
+    $COMPOSE_CMD -f "$compose_file" ps
+    
+    return 0
 }
 
 # 显示升级信息
@@ -418,7 +498,11 @@ show_upgrade_info() {
     echo ""
     
     if [ "$RESTART_CONTAINERS" = true ]; then
-        echo -e "${BLUE}服务已自动重启${NC}"
+        if [ "$REBUILD_IMAGES" = true ]; then
+            echo -e "${BLUE}服务已自动重启（镜像已重新构建）${NC}"
+        else
+            echo -e "${BLUE}服务已自动重启${NC}"
+        fi
         echo ""
         echo -e "${BLUE}常用命令：${NC}"
         echo ""
@@ -435,6 +519,14 @@ show_upgrade_info() {
         echo -e "  停止服务:"
         echo -e "     cd ${PROJECT_ROOT}/docker && $compose_cmd down"
         echo ""
+        if [ "$REBUILD_IMAGES" != true ]; then
+            echo -e "${YELLOW}💡 提示：${NC}"
+            echo -e "   如果升级后出现问题，可以尝试重新构建镜像："
+            echo -e "     cd ${PROJECT_ROOT}/docker"
+            echo -e "     $compose_cmd build --no-cache"
+            echo -e "     $compose_cmd up -d"
+            echo ""
+        fi
     else
         echo -e "${BLUE}下一步操作：${NC}"
         echo ""

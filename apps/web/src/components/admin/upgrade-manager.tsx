@@ -28,6 +28,7 @@ export function UpgradeManager() {
   const [status, setStatus] = useState<UpgradeStatus | null>(null)
   const [logs, setLogs] = useState<UpgradeLog[]>([])
   const [skipRestart, setSkipRestart] = useState(false)
+  const [rebuildImages, setRebuildImages] = useState(false)
 
   // 组件加载时自动检查
   useEffect(() => {
@@ -70,7 +71,7 @@ export function UpgradeManager() {
       const response = await fetch('/api/admin/upgrade/execute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ skipRestart }),
+        body: JSON.stringify({ skipRestart, rebuildImages }),
       })
 
       if (!response.ok) {
@@ -217,6 +218,30 @@ export function UpgradeManager() {
         <div>
           <h3 className="text-base font-semibold mb-2">升级选项</h3>
           <div className="space-y-3">
+            <label className="flex items-start gap-2 cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={rebuildImages}
+                onChange={(e) => setRebuildImages(e.target.checked)}
+                className="rounded border-border mt-0.5"
+                disabled={upgrading}
+              />
+              <div className="flex-1">
+                <span className="text-sm font-medium">重新构建镜像（无缓存）</span>
+                <p className="text-xs text-text-muted mt-1">
+                  适用于依赖更新、Dockerfile 修改或构建配置变更。构建时间较长，但确保镜像完全更新。
+                </p>
+                <div className="mt-1 text-xs text-text-muted">
+                  <p className="font-medium mb-0.5">建议在以下情况使用：</p>
+                  <ul className="list-disc list-inside space-y-0.5 ml-2">
+                    <li>package.json 或 pnpm-lock.yaml 有变更</li>
+                    <li>Dockerfile 有修改</li>
+                    <li>构建时环境变量（NEXT_PUBLIC_*）有变更</li>
+                    <li>镜像损坏或容器启动异常</li>
+                  </ul>
+                </div>
+              </div>
+            </label>
             <label className="flex items-start gap-2 cursor-pointer group">
               <input
                 type="checkbox"
