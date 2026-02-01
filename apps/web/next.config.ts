@@ -39,6 +39,10 @@ const nextConfig: NextConfig = {
         pathname: '/icons/**',
         search: '**', // 允许所有查询字符串（如 ?v=3）
       },
+      {
+        pathname: '/media/**',
+        search: '**', // 允许所有查询字符串（如 ?t=timestamp）
+      },
     ],
     remotePatterns: [
       // 本地开发环境
