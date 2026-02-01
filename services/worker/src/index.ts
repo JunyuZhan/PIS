@@ -2057,8 +2057,8 @@ async function checkPendingPhotos(albumId?: string) {
     
     // 3. 检查每个 pending 照片的文件是否存在
     const allPhotosToCheck = [
-      ...(pendingPhotos || []).map(p => ({ ...p, isPending: true })),
-      ...(stuckProcessingPhotos || []).map(p => ({ ...p, isPending: false }))
+      ...(pendingPhotos || []).map((p: { id: string; album_id: string; original_key: string; created_at: string | null; updated_at: string | null }) => ({ ...p, isPending: true })),
+      ...(stuckProcessingPhotos || []).map((p: { id: string; album_id: string; original_key: string; created_at: string | null; updated_at: string | null }) => ({ ...p, isPending: false }))
     ];
     
     if (allPhotosToCheck.length > 0) {
