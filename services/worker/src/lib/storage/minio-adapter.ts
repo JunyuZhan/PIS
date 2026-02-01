@@ -322,7 +322,13 @@ export class MinIOAdapter implements StorageAdapter {
     if (!this.publicUrl) return url;
     
     try {
-      const publicUrlObj = new URL(this.publicUrl);
+      // 如果 publicUrl 缺少协议，添加 http://（默认使用 HTTP）
+      let publicUrlStr = this.publicUrl;
+      if (!publicUrlStr.match(/^https?:\/\//)) {
+        publicUrlStr = `http://${publicUrlStr}`;
+      }
+      
+      const publicUrlObj = new URL(publicUrlStr);
       const urlObj = new URL(url);
       
       // 替换协议和主机

@@ -210,7 +210,9 @@ const nextConfig: NextConfig = {
             'https://localhost',
             'http://localhost:19000', // MinIO API 端口（如果暴露）
             'http://localhost:8081',  // Next.js Web 端口
+            'https://localhost:8081',  // Next.js Web 端口 (HTTPS)
             'http://localhost:3000',  // Next.js 内部端口
+            'https://localhost:3000',  // Next.js 内部端口 (HTTPS)
           ] 
         : [])
     ]
