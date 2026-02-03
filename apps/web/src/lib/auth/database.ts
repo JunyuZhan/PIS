@@ -70,9 +70,14 @@ export class PostgreSQLAuthDatabase implements ExtendedAuthDatabase {
       .from<{ id: string; email: string; password_hash: string | null }>('users')
       .select('id, email, password_hash')
       .eq('email', email.toLowerCase())
-      .single()
+      .maybeSingle() // 使用 maybeSingle 避免多条记录时抛出错误，且在无记录时返回 null 而非错误
 
-    if (error || !data) {
+    if (error) {
+      console.error('Find user error:', error)
+      return null
+    }
+
+    if (!data) {
       return null
     }
 

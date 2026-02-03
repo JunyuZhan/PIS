@@ -1,59 +1,76 @@
-import { createClient } from '@/lib/database'
-import { getCurrentUser } from '@/lib/auth'
-import { redirect } from 'next/navigation'
-import { User, Mail, Database, Server, Globe, Lock, HardDrive, Calendar, FileText, CheckCircle2, Download } from 'lucide-react'
-import { ChangePasswordForm } from '@/components/admin/change-password-form'
-import { TemplateManager } from '@/components/admin/template-manager'
-import { ConsistencyChecker } from '@/components/admin/consistency-checker'
-import { UpgradeManager } from '@/components/admin/upgrade-manager'
+import { createClient } from "@/lib/database";
+import { getCurrentUser } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import {
+  User,
+  Mail,
+  Database,
+  Server,
+  Globe,
+  Lock,
+  HardDrive,
+  Calendar,
+  FileText,
+  CheckCircle2,
+  Download,
+} from "lucide-react";
+import { ChangePasswordForm } from "@/components/admin/change-password-form";
+import { TemplateManager } from "@/components/admin/template-manager";
+import { ConsistencyChecker } from "@/components/admin/consistency-checker";
+import { UpgradeManager } from "@/components/admin/upgrade-manager";
 
 export default async function SettingsPage() {
-  const db = await createClient()
-  
-  const user = await getCurrentUser()
+  const db = await createClient();
+
+  const user = await getCurrentUser();
 
   if (!user) {
-    redirect('/admin/login')
+    redirect("/admin/login");
   }
 
   // 获取相册统计
   const albumCountResult = await db
-    .from('albums')
-    .select('*')
-    .is('deleted_at', null)
-    .execute()
+    .from("albums")
+    .select("*")
+    .is("deleted_at", null)
+    .execute();
 
-  const albumCount = albumCountResult.count || albumCountResult.data?.length || 0
+  const albumCount =
+    albumCountResult.count || albumCountResult.data?.length || 0;
 
   const photoCountResult = await db
-    .from('photos')
-    .select('*')
-    .eq('status', 'completed')
-    .is('deleted_at', null)
-    .execute()
+    .from("photos")
+    .select("*")
+    .eq("status", "completed")
+    .is("deleted_at", null)
+    .execute();
 
-  const photoCount = photoCountResult.count || photoCountResult.data?.length || 0
+  const photoCount =
+    photoCountResult.count || photoCountResult.data?.length || 0;
 
   // 获取公开相册数量
   const publicAlbumCountResult = await db
-    .from('albums')
-    .select('*')
-    .eq('is_public', true)
-    .is('deleted_at', null)
-    .execute()
+    .from("albums")
+    .select("*")
+    .eq("is_public", true)
+    .is("deleted_at", null)
+    .execute();
 
-  const publicAlbumCount = publicAlbumCountResult.count || publicAlbumCountResult.data?.length || 0
+  const publicAlbumCount =
+    publicAlbumCountResult.count || publicAlbumCountResult.data?.length || 0;
 
   // 获取最近创建的相册
   const recentAlbumsResult = await db
-    .from('albums')
-    .select('created_at')
-    .is('deleted_at', null)
-    .order('created_at', { ascending: false })
+    .from("albums")
+    .select("created_at")
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false })
     .limit(1)
-    .execute()
+    .execute();
 
-  const recentAlbums = (recentAlbumsResult.data || []) as Array<{ created_at: string }>
+  const recentAlbums = (recentAlbumsResult.data || []) as Array<{
+    created_at: string;
+  }>;
 
   return (
     <div className="space-y-6">
@@ -90,12 +107,11 @@ export default async function SettingsPage() {
                 <p className="text-sm text-text-muted">注册时间</p>
                 <p className="font-medium">
                   {(() => {
-                    const date = new Date(user.created_at)
-                    const year = date.getFullYear()
-                    const month = date.getMonth() + 1
-                    const day = date.getDate()
-                    const monthNames = ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月']
-                    return `${year}年${monthNames[month - 1]}${day}日`
+                    const date = new Date(user.created_at);
+                    const year = date.getFullYear();
+                    const month = date.getMonth() + 1;
+                    const day = date.getDate();
+                    return `${year}年${month}月${day}日`;
                   })()}
                 </p>
               </div>
@@ -135,7 +151,7 @@ export default async function SettingsPage() {
           <div className="p-4 bg-surface rounded-lg">
             <p className="text-sm text-text-muted mb-1">存储使用</p>
             <p className="text-2xl font-bold">
-              {photoCount ? ((photoCount * 5) / 1024).toFixed(1) : '0'} GB
+              {photoCount ? ((photoCount * 5) / 1024).toFixed(1) : "0"} GB
             </p>
             <p className="text-xs text-text-muted mt-1">估算值</p>
           </div>
@@ -170,12 +186,11 @@ export default async function SettingsPage() {
               <span className="text-text-muted">最后活动</span>
               <span className="font-medium">
                 {(() => {
-                  const date = new Date(recentAlbums[0].created_at)
-                  const year = date.getFullYear()
-                  const month = date.getMonth() + 1
-                  const day = date.getDate()
-                  const monthNames = ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月']
-                  return `${year}年${monthNames[month - 1]}${day}日`
+                  const date = new Date(recentAlbums[0].created_at);
+                  const year = date.getFullYear();
+                  const month = date.getMonth() + 1;
+                  const day = date.getDate();
+                  return `${year}年${month}月${day}日`;
                 })()}
               </span>
             </div>
@@ -236,5 +251,5 @@ export default async function SettingsPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

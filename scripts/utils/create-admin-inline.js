@@ -76,6 +76,7 @@ async function createAdmin() {
       password: dbPassword
     });
 
+    console.log(`Connecting to database ${dbUser}@${dbHost}:${dbPort}/${dbName}...`);
     await client.connect();
     console.log('✅ 已连接到数据库');
 
@@ -117,10 +118,10 @@ async function createAdmin() {
       await client.end();
     }
   } catch (error) {
-    console.error('❌ 错误:', error.message);
-    if (error.message.includes('ECONNREFUSED')) {
+    console.error('❌ 错误:', error);
+    if (error.message && error.message.includes('ECONNREFUSED')) {
       console.error('   提示: 请确保 PostgreSQL 服务正在运行');
-    } else if (error.message.includes('pg')) {
+    } else if (error.message && error.message.includes('pg')) {
       console.error('   提示: 请确保 pg 包已安装');
     }
     process.exit(1);

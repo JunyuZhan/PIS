@@ -431,9 +431,18 @@ class PostgresQueryBuilder<T = unknown> {
         count,
       }
     } catch (error) {
+      // 增强错误信息，帮助开发者排查连接问题
+      let enhancedError = error instanceof Error ? error : new Error(String(error))
+      
+      // 检测常见的连接错误
+      if (enhancedError.message.includes('ECONNREFUSED') || enhancedError.name === 'AggregateError') {
+        console.error('Database connection failed. Is Docker running?')
+        enhancedError = new Error(`Database connection failed: ${enhancedError.message}. Please ensure Docker containers are running (pnpm dev:services).`)
+      }
+
       return {
         data: null,
-        error: error instanceof Error ? error : new Error(String(error)),
+        error: enhancedError,
       }
     }
   }

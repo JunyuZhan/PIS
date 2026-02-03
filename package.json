@@ -45,7 +45,11 @@
     "test:browser-compat": "bash scripts/test/test-browser-compat.sh"
   },
   "devDependencies": {
+    "@types/node": "^20.14.0",
+    "dotenv": "^17.2.3",
+    "pg": "^8.13.1",
     "prettier": "^3.2.0",
+    "tsx": "^4.16.0",
     "turbo": "^2.3.0"
   },
   "packageManager": "pnpm@9.0.0",

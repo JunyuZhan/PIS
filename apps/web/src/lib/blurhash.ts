@@ -71,7 +71,16 @@ async function loadBlurhashModule() {
       blurhashModule = blurhash
       return blurhashModule
     }
-  } catch {
+
+    // 兼容 ESM/CJS interop (有些环境下可能是 default export)
+    // @ts-ignore
+    if (blurhash && blurhash.default && typeof blurhash.default.decode === 'function') {
+      // @ts-ignore
+      blurhashModule = blurhash.default
+      return blurhashModule
+    }
+  } catch (error) {
+    console.error('Failed to load blurhash module:', error)
     // 模块加载失败（可能在服务端或模块不存在）
     return null
   }
