@@ -664,6 +664,28 @@ CREATE TABLE IF NOT EXISTS email_config (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- ============================================
+-- 自定义翻译表
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS custom_translations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    locale VARCHAR(10) NOT NULL,              -- 语言代码，如 'zh-CN', 'en'
+    namespace VARCHAR(100) NOT NULL,          -- 命名空间，如 'common', 'admin', 'album'
+    key VARCHAR(255) NOT NULL,                -- 翻译键，如 'title', 'description'
+    value TEXT NOT NULL,                      -- 翻译值
+    is_active BOOLEAN DEFAULT true,           -- 是否启用（启用后覆盖默认翻译）
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(locale, namespace, key)
+);
+
+CREATE INDEX IF NOT EXISTS idx_custom_translations_locale ON custom_translations(locale);
+CREATE INDEX IF NOT EXISTS idx_custom_translations_namespace ON custom_translations(namespace);
+CREATE INDEX IF NOT EXISTS idx_custom_translations_active ON custom_translations(is_active);
+
+COMMENT ON TABLE custom_translations IS '自定义翻译表，用于覆盖默认翻译字符串';
+
 -- 初始化完成提示
 -- ============================================
 DO $$
@@ -684,6 +706,7 @@ BEGIN
     RAISE NOTICE '   - upgrade_history 表: 存储升级历史';
     RAISE NOTICE '   - notifications 表: 存储客户通知记录';
     RAISE NOTICE '   - email_config 表: 存储邮件配置';
+    RAISE NOTICE '   - custom_translations 表: 存储自定义翻译';
     RAISE NOTICE '';
     RAISE NOTICE '👤 默认用户账户:';
     RAISE NOTICE '   - 管理员: admin@pis.com';

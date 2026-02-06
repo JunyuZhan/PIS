@@ -15,6 +15,7 @@ import {
   Download,
   Sparkles,
   Settings,
+  Languages,
 } from "lucide-react";
 import { ChangePasswordForm } from "@/components/admin/change-password-form";
 import { TemplateManager } from "@/components/admin/template-manager";
@@ -243,6 +244,24 @@ export default async function SettingsPage() {
           enabledAlbums={aiRetouchAlbumsCount}
           allAlbumIds={allAlbumIds}
         />
+      </div>
+
+      {/* 国际化设置 */}
+      <div className="card">
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Languages className="w-5 h-5 text-accent" />
+          国际化设置
+        </h2>
+        <p className="text-sm text-text-muted mb-4">
+          管理系统的多语言翻译字符串，可以自定义覆盖默认翻译
+        </p>
+        <a
+          href="/admin/settings/translations"
+          className="block p-3 bg-surface rounded-lg hover:bg-surface-elevated transition-colors cursor-pointer"
+        >
+          <p className="font-medium">语言包管理</p>
+          <p className="text-sm text-text-muted">查看和编辑系统翻译字符串</p>
+        </a>
       </div>
 
       {/* 模板管理 */}

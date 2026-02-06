@@ -408,7 +408,10 @@
   - [x] 数据库字段支持（title_translations, description_translations 等 JSONB 字段）
   - [x] API 支持（createAlbumSchema, updateAlbumSchema 添加多语言字段）
   - [x] 前端编辑组件（TranslationEditor 组件）
-- [ ] 语言包管理界面
+- [x] 语言包管理界面
+  - [x] 数据库表支持（custom_translations）
+  - [x] API 端点（GET/POST/DELETE 翻译、导入/导出）
+  - [x] 管理界面组件（TranslationManager）
 
 **已完成的技术实现：**
 ```
@@ -422,6 +425,7 @@
    - components/ui/language-switcher.tsx: 语言切换组件
    - components/admin/sidebar.tsx: 使用 useTranslations
    - components/admin/translation-editor.tsx: 多语言编辑器组件
+   - components/admin/translation-manager.tsx: 语言包管理组件
 
 3. 翻译内容
    - 后台侧边栏菜单
@@ -437,6 +441,14 @@
    - 分享标题多语言编辑（share_title_translations）
    - 分享描述多语言编辑（share_description_translations）
    - 已集成到 album-settings-form.tsx
+
+5. 语言包管理
+   - 数据库表: custom_translations
+   - API: /api/admin/translations (GET/POST/DELETE)
+   - API: /api/admin/translations/export (GET)
+   - API: /api/admin/translations/import (POST)
+   - 页面: /admin/settings/translations
+   - 功能: 查看/编辑翻译、导入/导出、按命名空间筛选、搜索
 ```
 
 ### 9. 插件系统
