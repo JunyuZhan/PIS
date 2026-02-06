@@ -517,6 +517,32 @@ generate_config() {
                 need_update=1
             fi
             
+            # 检查 DATABASE_PASSWORD（PostgreSQL 必需）
+            if [ "$DEPLOYMENT_MODE" = "standalone" ]; then
+                local db_pass_check=$(grep '^DATABASE_PASSWORD=' "$env_target" 2>/dev/null | cut -d'=' -f2 | xargs)
+                if ! grep -q "^DATABASE_PASSWORD=" "$env_target" 2>/dev/null || [ -z "$db_pass_check" ]; then
+                    echo -e "${YELLOW}⚠️  检测到缺失 DATABASE_PASSWORD，将自动生成${NC}"
+                    if [ -z "$DATABASE_PASSWORD" ]; then
+                        DATABASE_PASSWORD=$(generate_secret | cut -c1-32)
+                    fi
+                    if [[ "$OSTYPE" == "darwin"* ]]; then
+                        sed -i '' "/^DATABASE_PASSWORD=/d" "$env_target" 2>/dev/null || true
+                    else
+                        sed -i "/^DATABASE_PASSWORD=/d" "$env_target" 2>/dev/null || true
+                    fi
+                    echo "DATABASE_PASSWORD=$DATABASE_PASSWORD" >> "$env_target"
+                    # 同时设置 POSTGRES_PASSWORD（PostgreSQL 容器需要）
+                    if [[ "$OSTYPE" == "darwin"* ]]; then
+                        sed -i '' "/^POSTGRES_PASSWORD=/d" "$env_target" 2>/dev/null || true
+                    else
+                        sed -i "/^POSTGRES_PASSWORD=/d" "$env_target" 2>/dev/null || true
+                    fi
+                    echo "POSTGRES_PASSWORD=$DATABASE_PASSWORD" >> "$env_target"
+                    need_update=1
+                    echo -e "${YELLOW}⚠️  注意：数据库密码已更新，需要重启 PostgreSQL 容器${NC}"
+                fi
+            fi
+            
             if [ "$need_update" -eq 1 ]; then
                 echo -e "${CYAN}已补充缺失的安全密钥${NC}"
             fi
