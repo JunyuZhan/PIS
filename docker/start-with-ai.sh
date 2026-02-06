@@ -62,6 +62,13 @@ if [ ! -f "../.env" ]; then
     fi
 fi
 
+# 确保 Docker Compose 能找到 .env 文件（创建符号链接）
+# Docker Compose 在解析变量时会在当前目录查找 .env 文件
+if [ ! -f ".env" ] && [ -f "../.env" ]; then
+    echo -e "${CYAN}创建 .env 符号链接以便 Docker Compose 读取...${NC}"
+    ln -sf ../.env .env
+fi
+
 echo -e "${CYAN}正在启动服务（包含 AI 服务）...${NC}"
 echo ""
 

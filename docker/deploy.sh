@@ -1676,6 +1676,14 @@ main() {
             exit 1
         fi
         
+        # 确保 Docker Compose 能找到 .env 文件（创建符号链接）
+        # Docker Compose 在解析变量时会在当前目录查找 .env 文件
+        if [ ! -f ".env" ] && [ -f "../.env" ]; then
+            echo -e "${CYAN}创建 .env 符号链接以便 Docker Compose 读取...${NC}"
+            ln -sf ../.env .env
+            print_success ".env 符号链接已创建"
+        fi
+        
         # 检查是否有旧容器冲突（所有容器都使用 pis- 前缀）
         echo -e "${CYAN}检查是否有旧容器...${NC}"
         local conflicting_containers=$(docker ps -a --format '{{.Names}}' | grep -E '^pis-(web|postgres|minio|minio-init|redis|worker)$' || true)
