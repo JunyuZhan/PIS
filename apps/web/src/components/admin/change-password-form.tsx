@@ -51,6 +51,7 @@ export function ChangePasswordForm() {
         body: JSON.stringify({
           currentPassword: formData.currentPassword,
           newPassword: formData.newPassword,
+          confirmPassword: formData.confirmPassword, // 添加确认密码字段
         }),
       })
 
