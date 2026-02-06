@@ -265,11 +265,13 @@ export class FtpServerService {
       "login",
       async ({ connection, username, password }, resolve, reject) => {
         try {
+          // 获取数据库客户端
+          const dbClient = await getDb();
           let albumId = "";
 
           // 1. Check if username is UUID (Album ID)
           if (validateUuid(username)) {
-            const { data: album, error } = await db
+            const { data: album, error } = await dbClient
               .from("albums")
               .select("id, upload_token, is_public")
               .eq("id", username)
@@ -289,7 +291,7 @@ export class FtpServerService {
           }
           // 2. Check if username is slug (Short Code)
           else {
-            const { data: album, error } = await db
+            const { data: album, error } = await dbClient
               .from("albums")
               .select("id, upload_token")
               .eq("slug", username)
