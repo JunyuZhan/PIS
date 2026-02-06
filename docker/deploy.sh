@@ -228,12 +228,12 @@ configure_domain() {
     fi
 
     # 自动推断相关 URL
-        # 在 standalone 模式下，所有服务都通过 Web 容器的 8081 端口访问
+        # 在 standalone 模式下，所有服务都通过 Nginx 的 8088 端口访问
     if [ "$DOMAIN" = "localhost" ]; then
-        # 本地测试：使用 8081 端口（Web 容器暴露的端口）
-        APP_URL="http://localhost:8081"
-        MEDIA_URL="http://localhost:8081/media"
-        WORKER_URL="http://localhost:8081/worker-api"
+        # 本地测试：使用 8088 端口（Nginx 暴露的端口）
+        APP_URL="http://localhost:8088"
+        MEDIA_URL="http://localhost:8088/media"
+        WORKER_URL="http://localhost:8088/worker-api"
     else
         # 生产环境：使用域名（通过 Next.js 路径访问）
         APP_URL="https://$DOMAIN"
@@ -887,7 +887,7 @@ show_completion_info() {
         if [ "$DOMAIN" != "localhost" ]; then
             echo "   访问地址: https://$DOMAIN/admin/login"
         fi
-        echo "   访问地址: http://localhost:8081/admin/login"
+        echo "   访问地址: http://localhost:8088/admin/login"
         if [ -n "$ADMIN_EMAIL" ]; then
             echo "   登录邮箱: $ADMIN_EMAIL"
             if [ -n "$ADMIN_PASSWORD" ]; then
@@ -911,7 +911,7 @@ show_completion_info() {
         if [ "$DOMAIN" != "localhost" ]; then
             echo "   访问地址: https://$DOMAIN/minio-console/"
         fi
-        echo "   访问地址: http://localhost:8081/minio-console/"
+        echo "   访问地址: http://localhost:8088/minio-console/"
     else
         echo "   访问地址: http://localhost:19001"
     fi
@@ -976,7 +976,7 @@ show_completion_info() {
         if [ "$DOMAIN" != "localhost" ]; then
             echo "   访问地址: https://$DOMAIN/worker-api/"
         fi
-        echo "   访问地址: http://localhost:8081/worker-api/"
+        echo "   访问地址: http://localhost:8088/worker-api/"
     else
         echo "   访问地址: http://localhost:3001"
     fi
@@ -1209,7 +1209,7 @@ create_admin_account() {
             if [ "$DOMAIN" != "localhost" ]; then
                 echo "  https://$DOMAIN/admin/login"
             fi
-            echo "  http://localhost:8081/admin/login"
+            echo "  http://localhost:8088/admin/login"
             echo ""
             return 0
         fi
@@ -1321,7 +1321,7 @@ const { Client } = require('pg');
         if [ "$DOMAIN" != "localhost" ]; then
             echo "  https://$DOMAIN/admin/login"
         fi
-        echo "  http://localhost:8081/admin/login"
+        echo "  http://localhost:8088/admin/login"
         echo ""
     else
         print_warning "在容器内创建失败，尝试在宿主机执行..."
@@ -1376,7 +1376,7 @@ create_admin_on_host() {
             echo ""
             echo -e "${CYAN}登录地址：${NC}"
             echo "  http://$DOMAIN/admin/login"
-            echo "  或 http://localhost:8081/admin/login"
+            echo "  或 http://localhost:8088/admin/login"
         else
             print_error "创建管理员账号失败"
             echo ""
@@ -1404,7 +1404,7 @@ main() {
     echo ""
     echo -e "${YELLOW}部署前请确保:${NC}"
     echo "  • 已安装 Docker 和 Docker Compose"
-    echo "  • 服务器端口 8081 可用（HTTP 访问端口）"
+    echo "  • 服务器端口 8088 可用（HTTP 访问端口）"
     echo "  • 域名已解析到服务器（如果使用域名和 SSL）"
     echo ""
 
