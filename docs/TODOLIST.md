@@ -289,15 +289,18 @@
   - [x] 一个客户多个相册
   - [x] 客户-相册关联 API
   - [x] 相册页面关联客户选择器
-- [ ] 通知功能（待实现）
-  - [ ] 相册就绪通知
-  - [ ] 短信/邮件通知
+- [x] 通知功能
+  - [x] 相册就绪通知
+  - [x] 邮件通知（SMTP）
+  - [ ] 短信通知（待实现，需要第三方短信服务）
 
 **已完成的技术实现：**
 ```
 1. 数据库表
    - customers: 客户信息表
    - customer_albums: 客户-相册关联表
+   - notifications: 通知记录表
+   - email_config: 邮件配置表
 
 2. API 接口
    - GET /api/admin/customers: 获取客户列表（支持搜索、筛选、分页）
@@ -307,10 +310,14 @@
    - DELETE /api/admin/customers/[id]: 删除客户（软删除）
    - POST /api/admin/customers/[id]/albums: 关联相册
    - DELETE /api/admin/customers/[id]/albums: 取消关联
+   - POST /api/admin/notifications/send: 发送客户通知
+   - GET /api/admin/notifications: 获取通知历史
+   - GET/POST /api/admin/notifications/email-config: 邮件配置管理
 
 3. 前端组件
    - components/admin/customer-list.tsx: 客户列表页
    - components/admin/customer-dialog.tsx: 客户编辑对话框
+   - components/admin/send-notification-dialog.tsx: 发送通知对话框
    - app/admin/(dashboard)/customers/page.tsx: 客户管理页面
 
 4. 功能特点
@@ -318,6 +325,9 @@
    - 按状态、标签筛选
    - 显示关联相册数量
    - 标签管理（添加/删除）
+   - 相册就绪邮件通知（精美模板）
+   - 支持自定义邮件主题和内容
+   - 通知历史记录
 ```
 
 ### 7. 数据统计 ✅ 已完成

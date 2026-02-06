@@ -17,10 +17,12 @@ import {
   RefreshCw,
   ChevronLeft,
   ChevronRight,
+  Send,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { showSuccess, handleApiError } from '@/lib/toast'
 import { CustomerDialog } from './customer-dialog'
+import { SendNotificationDialog } from './send-notification-dialog'
 
 interface Customer {
   id: string
@@ -71,6 +73,8 @@ export function CustomerList() {
   const [showDialog, setShowDialog] = useState(false)
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null)
   const [menuOpen, setMenuOpen] = useState<string | null>(null)
+  const [showNotificationDialog, setShowNotificationDialog] = useState(false)
+  const [notifyCustomer, setNotifyCustomer] = useState<Customer | null>(null)
 
   // 获取客户列表
   const { data, isLoading, refetch } = useQuery<CustomersResponse>({
@@ -131,6 +135,17 @@ export function CustomerList() {
   const handleSaved = () => {
     handleDialogClose()
     queryClient.invalidateQueries({ queryKey: ['customers'] })
+  }
+
+  const handleSendNotification = (customer: Customer) => {
+    setNotifyCustomer(customer)
+    setShowNotificationDialog(true)
+    setMenuOpen(null)
+  }
+
+  const handleNotificationClose = () => {
+    setShowNotificationDialog(false)
+    setNotifyCustomer(null)
   }
 
   return (
@@ -319,6 +334,14 @@ export function CustomerList() {
                                 编辑
                               </button>
                               <button
+                                onClick={() => handleSendNotification(customer)}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-surface transition-colors"
+                                title={customer.email ? '发送邮件通知' : '客户没有邮箱'}
+                              >
+                                <Send className="w-4 h-4" />
+                                发送通知
+                              </button>
+                              <button
                                 onClick={() => handleDelete(customer.id)}
                                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-surface transition-colors"
                               >
@@ -369,6 +392,14 @@ export function CustomerList() {
         customer={editingCustomer}
         onClose={handleDialogClose}
         onSaved={handleSaved}
+      />
+
+      {/* 发送通知对话框 */}
+      <SendNotificationDialog
+        open={showNotificationDialog}
+        customer={notifyCustomer}
+        onClose={handleNotificationClose}
+        onSent={handleNotificationClose}
       />
     </div>
   )

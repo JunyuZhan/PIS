@@ -619,6 +619,46 @@ CREATE TABLE IF NOT EXISTS upgrade_history (
 CREATE INDEX IF NOT EXISTS idx_upgrade_history_status ON upgrade_history(status);
 CREATE INDEX IF NOT EXISTS idx_upgrade_history_started_at ON upgrade_history(started_at DESC);
 
+-- ============================================
+-- 通知记录表
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS notifications (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
+    album_id UUID REFERENCES albums(id) ON DELETE SET NULL,
+    type VARCHAR(50) NOT NULL,
+    channel VARCHAR(20) NOT NULL,
+    recipient VARCHAR(255) NOT NULL,
+    subject VARCHAR(500),
+    content TEXT,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    sent_at TIMESTAMP WITH TIME ZONE,
+    error_message TEXT,
+    metadata JSONB DEFAULT '{}',
+    created_by UUID REFERENCES users(id),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_notifications_customer_id ON notifications(customer_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_album_id ON notifications(album_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_status ON notifications(status);
+
+-- 邮件配置表
+CREATE TABLE IF NOT EXISTS email_config (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    smtp_host VARCHAR(255) NOT NULL,
+    smtp_port INTEGER NOT NULL DEFAULT 587,
+    smtp_secure BOOLEAN DEFAULT true,
+    smtp_user VARCHAR(255),
+    smtp_pass VARCHAR(255),
+    from_email VARCHAR(255) NOT NULL,
+    from_name VARCHAR(255),
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- 初始化完成提示
 -- ============================================
 DO $$
@@ -637,6 +677,8 @@ BEGIN
     RAISE NOTICE '   - photo_group_assignments 表: 存储照片分组关联';
     RAISE NOTICE '   - system_settings 表: 存储系统设置';
     RAISE NOTICE '   - upgrade_history 表: 存储升级历史';
+    RAISE NOTICE '   - notifications 表: 存储客户通知记录';
+    RAISE NOTICE '   - email_config 表: 存储邮件配置';
     RAISE NOTICE '';
     RAISE NOTICE '👤 默认用户账户:';
     RAISE NOTICE '   - 管理员: admin@pis.com';
