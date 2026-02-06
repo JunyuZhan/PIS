@@ -5,6 +5,7 @@ import { getAlbumShareUrl, generateAlbumSlug, getAppBaseUrl, generateUploadToken
 import type { AlbumInsert, Json } from '@/types/database'
 import { createAlbumSchema } from '@/lib/validation/schemas'
 import { safeValidate, handleError, createSuccessResponse, ApiError } from '@/lib/validation/error-handler'
+import { logCreate } from '@/lib/audit-log'
 
 /**
  * 相册管理 API
@@ -272,6 +273,14 @@ export async function POST(request: NextRequest) {
       const appUrl = getAppBaseUrl()
       shareUrl = `${appUrl}/album/${encodeURIComponent(data.slug || '')}`
     }
+
+    // 记录操作日志
+    logCreate(
+      { id: admin.id, email: admin.email, role: admin.role },
+      'album',
+      data.id,
+      data.title
+    )
 
     // 返回创建结果（包含 upload_token 用于 FTP 配置）
     return createSuccessResponse({

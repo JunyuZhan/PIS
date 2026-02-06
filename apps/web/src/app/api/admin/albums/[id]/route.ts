@@ -5,6 +5,7 @@ import { generateUploadToken } from '@/lib/utils'
 import type { AlbumUpdate, Json } from '@/types/database'
 import { updateAlbumSchema, albumIdSchema } from '@/lib/validation/schemas'
 import { safeValidate, handleError, createSuccessResponse, ApiError } from '@/lib/validation/error-handler'
+import { logUpdate, logDelete } from '@/lib/audit-log'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -304,6 +305,15 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     // 已上传的照片不会被重新处理，避免数据库错误和性能问题
     // 水印配置会在照片上传时由 Worker 读取并应用（见 services/worker/src/index.ts）
 
+    // 记录操作日志
+    logUpdate(
+      { id: admin.id, email: admin.email, role: admin.role },
+      'album',
+      id,
+      album.title,
+      { after: validatedData }
+    )
+
     return createSuccessResponse({
       ...album,
       message: '设置已更新。水印配置将应用于之后上传的新照片。'
@@ -402,6 +412,14 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       // 记录错误但不阻止删除操作
       console.warn('[Delete Album] Failed to revalidate cache:', revalidateError)
     }
+
+    // 记录操作日志
+    logDelete(
+      { id: admin.id, email: admin.email, role: admin.role },
+      'album',
+      id,
+      album.title
+    )
 
     return createSuccessResponse({
       success: true,

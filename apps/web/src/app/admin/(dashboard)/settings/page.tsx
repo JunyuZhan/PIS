@@ -17,6 +17,7 @@ import {
   Settings,
   Languages,
   Palette,
+  ScrollText,
 } from "lucide-react";
 import { ChangePasswordForm } from "@/components/admin/change-password-form";
 import { TemplateManager } from "@/components/admin/template-manager";
@@ -308,6 +309,24 @@ export default async function SettingsPage() {
           系统升级
         </h2>
         <UpgradeManager />
+      </div>
+
+      {/* 操作日志 */}
+      <div className="card">
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <ScrollText className="w-5 h-5 text-accent" />
+          操作日志
+        </h2>
+        <p className="text-sm text-text-muted mb-4">
+          查看系统操作日志，追踪用户行为和变更记录
+        </p>
+        <a
+          href="/admin/settings/audit-logs"
+          className="block p-3 bg-surface rounded-lg hover:bg-surface-elevated transition-colors cursor-pointer"
+        >
+          <p className="font-medium">审计日志查看器</p>
+          <p className="text-sm text-text-muted">搜索、筛选和导出系统操作记录</p>
+        </a>
       </div>
 
       {/* 快速操作 */}

@@ -10,6 +10,7 @@ import { initAuthDatabase } from '@/lib/auth/database'
 import { loginSchema } from '@/lib/validation/schemas'
 import { safeValidate, handleError } from '@/lib/validation/error-handler'
 import { createAdminClient } from '@/lib/database'
+import { logLogin } from '@/lib/audit-log'
 
 // 初始化认证数据库（如果尚未初始化）
 try {
@@ -431,6 +432,11 @@ export async function POST(request: NextRequest) {
           console.error('Failed to update last login time:', err)
         })
       }
+
+      // 记录登录日志（异步，不阻塞响应）
+      logLogin({ id: user.id, email: user.email, role: (user as { role?: string }).role }).catch((err) => {
+        console.error('Failed to log login:', err)
+      })
 
       return response
     } catch (error) {

@@ -718,6 +718,45 @@ CREATE INDEX IF NOT EXISTS idx_style_templates_sort_order ON style_templates(sor
 
 COMMENT ON TABLE style_templates IS '自定义样式模板表，存储用户创建的相册视觉样式';
 
+-- ============================================
+-- 操作日志表
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    -- 操作者信息
+    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    user_email VARCHAR(255),
+    user_role VARCHAR(50),
+    -- 操作信息
+    action VARCHAR(100) NOT NULL,
+    resource_type VARCHAR(100) NOT NULL,
+    resource_id VARCHAR(255),
+    resource_name VARCHAR(500),
+    -- 详细信息
+    description TEXT,
+    changes JSONB DEFAULT '{}',
+    metadata JSONB DEFAULT '{}',
+    -- 请求信息
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+    request_method VARCHAR(10),
+    request_path TEXT,
+    -- 状态
+    status VARCHAR(20) DEFAULT 'success',
+    error_message TEXT,
+    -- 时间戳
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_resource_type ON audit_logs(resource_type);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_resource_id ON audit_logs(resource_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at DESC);
+
+COMMENT ON TABLE audit_logs IS '操作日志表，记录系统中的关键操作';
+
 -- 初始化完成提示
 -- ============================================
 DO $$
@@ -740,6 +779,7 @@ BEGIN
     RAISE NOTICE '   - email_config 表: 存储邮件配置';
     RAISE NOTICE '   - custom_translations 表: 存储自定义翻译';
     RAISE NOTICE '   - style_templates 表: 存储自定义样式模板';
+    RAISE NOTICE '   - audit_logs 表: 存储操作日志';
     RAISE NOTICE '';
     RAISE NOTICE '👤 默认用户账户:';
     RAISE NOTICE '   - 管理员: admin@pis.com';
