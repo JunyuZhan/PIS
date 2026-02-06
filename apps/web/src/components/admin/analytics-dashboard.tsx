@@ -13,6 +13,7 @@ import {
   RefreshCw,
   Calendar,
   BarChart3,
+  FileDown,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { showError } from '@/lib/toast'
@@ -56,6 +57,45 @@ export function AnalyticsDashboard() {
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState('7d')
+  const [exporting, setExporting] = useState(false)
+
+  // 导出报表
+  const handleExport = useCallback(async (format: 'csv' | 'json') => {
+    try {
+      setExporting(true)
+      const response = await fetch(`/api/admin/analytics/export?period=${period}&format=${format}`)
+      
+      if (!response.ok) {
+        throw new Error('导出失败')
+      }
+      
+      // 获取文件名
+      const contentDisposition = response.headers.get('Content-Disposition')
+      let filename = `analytics-${new Date().toISOString().split('T')[0]}.${format}`
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="?([^"]+)"?/)
+        if (match) {
+          filename = match[1]
+        }
+      }
+      
+      // 下载文件
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    } catch (error) {
+      console.error('导出失败:', error)
+      showError('导出报表失败')
+    } finally {
+      setExporting(false)
+    }
+  }, [period])
 
   const fetchData = useCallback(async () => {
     try {
@@ -142,6 +182,38 @@ export function AnalyticsDashboard() {
                 {p.label}
               </button>
             ))}
+          </div>
+          {/* 导出按钮 */}
+          <div className="relative group">
+            <button
+              disabled={exporting || !data}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors',
+                'bg-surface hover:bg-surface-elevated',
+                (exporting || !data) && 'opacity-50 cursor-not-allowed'
+              )}
+              title="导出报表"
+            >
+              <FileDown className={cn('w-4 h-4', exporting && 'animate-pulse')} />
+              <span>导出</span>
+            </button>
+            {/* 下拉菜单 */}
+            <div className="absolute right-0 mt-1 w-32 py-1 bg-surface-elevated border border-border rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+              <button
+                onClick={() => handleExport('csv')}
+                disabled={exporting || !data}
+                className="w-full px-3 py-2 text-left text-sm hover:bg-surface transition-colors"
+              >
+                导出 CSV
+              </button>
+              <button
+                onClick={() => handleExport('json')}
+                disabled={exporting || !data}
+                className="w-full px-3 py-2 text-left text-sm hover:bg-surface transition-colors"
+              >
+                导出 JSON
+              </button>
+            </div>
           </div>
           {/* 刷新按钮 */}
           <button
