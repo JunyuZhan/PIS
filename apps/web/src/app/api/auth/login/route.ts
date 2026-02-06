@@ -370,12 +370,18 @@ export async function POST(request: NextRequest) {
       
       // 使用 cookies() API 设置 cookie（这会自动添加到响应中）
       const cookieStore = await cookies()
-      const isProduction = process.env.NODE_ENV === 'production'
+      
+      // 根据实际请求协议设置 secure 标志
+      // 如果请求是 HTTPS，设置 secure: true；如果是 HTTP，设置 secure: false
+      // 这样可以支持生产环境使用 HTTP（内网部署）的情况
+      const protocol = request.headers.get('x-forwarded-proto') || 
+                      (request.url.startsWith('https://') ? 'https' : 'http')
+      const isHttps = protocol === 'https' || request.url.startsWith('https://')
       
       // 设置访问令牌 cookie
       cookieStore.set(COOKIE_NAME, accessToken, {
         httpOnly: true,
-        secure: isProduction, // 开发环境不使用 secure，避免 localhost 无法设置 cookie
+        secure: isHttps, // 根据实际协议设置，支持 HTTP 内网部署
         sameSite: 'lax',
         path: '/',
         maxAge: 60 * 60, // 1 小时
@@ -384,7 +390,7 @@ export async function POST(request: NextRequest) {
       // 设置刷新令牌 cookie
       cookieStore.set(REFRESH_COOKIE_NAME, refreshToken, {
         httpOnly: true,
-        secure: isProduction, // 开发环境不使用 secure，避免 localhost 无法设置 cookie
+        secure: isHttps, // 根据实际协议设置，支持 HTTP 内网部署
         sameSite: 'lax',
         path: '/',
         maxAge: 60 * 60 * 24 * 7, // 7 天
@@ -397,7 +403,8 @@ export async function POST(request: NextRequest) {
           refreshTokenSet: !!refreshToken,
           accessTokenLength: accessToken.length,
           refreshTokenLength: refreshToken.length,
-          secure: isProduction,
+          secure: isHttps,
+          protocol,
           sameSite: 'lax',
           path: '/',
         })
