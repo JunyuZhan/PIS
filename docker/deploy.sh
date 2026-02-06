@@ -529,9 +529,17 @@ EOF
         fi
         
         # 公共配置
+        # Docker 容器内使用的服务名（容器间通信）
+        local MINIO_CONTAINER_NAME="pis-minio"
+        local POSTGRES_CONTAINER_NAME="postgres"
+        local REDIS_CONTAINER_NAME="redis"
+        
         cat >> "$env_file" << EOF
 
 # ==================== MinIO 配置 ====================
+# 注意：容器内应使用容器名（pis-minio），而不是 localhost
+STORAGE_ENDPOINT=$MINIO_CONTAINER_NAME
+MINIO_ENDPOINT_HOST=$MINIO_CONTAINER_NAME
 MINIO_ACCESS_KEY=$MINIO_ACCESS_KEY
 MINIO_SECRET_KEY=$MINIO_SECRET_KEY
 MINIO_BUCKET=$MINIO_BUCKET
@@ -569,6 +577,12 @@ EOF
     # 2. 更新部署相关的配置变量（域名、数据库连接等）
     echo -e "${CYAN}更新部署配置...${NC}"
     
+    # Docker 容器内使用的服务名（容器间通信）
+    local MINIO_CONTAINER_NAME="pis-minio"
+    local POSTGRES_CONTAINER_NAME="postgres"
+    local REDIS_CONTAINER_NAME="redis"
+    local WORKER_CONTAINER_NAME="pis-worker"
+    
     if [[ "$OSTYPE" == "darwin"* ]]; then
         sed -i '' "s|^DOMAIN=.*|DOMAIN=$DOMAIN|g" "$env_file" 2>/dev/null || true
         sed -i '' "s|^NEXT_PUBLIC_APP_URL=.*|NEXT_PUBLIC_APP_URL=$APP_URL|g" "$env_file" 2>/dev/null || true
@@ -577,10 +591,22 @@ EOF
         sed -i '' "s|^WORKER_URL=.*|WORKER_URL=$WORKER_URL|g" "$env_file" 2>/dev/null || true
         sed -i '' "s|^WORKER_API_URL=.*|WORKER_API_URL=$WORKER_URL|g" "$env_file" 2>/dev/null || true
         
+        # 更新 MinIO 容器内配置（使用容器名）
+        sed -i '' "s|^STORAGE_ENDPOINT=.*|STORAGE_ENDPOINT=$MINIO_CONTAINER_NAME|g" "$env_file" 2>/dev/null || true
+        sed -i '' "s|^MINIO_ENDPOINT_HOST=.*|MINIO_ENDPOINT_HOST=$MINIO_CONTAINER_NAME|g" "$env_file" 2>/dev/null || true
+        
+        # 更新数据库容器内配置（使用容器名）
+        sed -i '' "s|^DATABASE_HOST=.*|DATABASE_HOST=$POSTGRES_CONTAINER_NAME|g" "$env_file" 2>/dev/null || true
+        
+        # 更新 Redis 容器内配置（使用容器名）
+        sed -i '' "s|^REDIS_HOST=.*|REDIS_HOST=$REDIS_CONTAINER_NAME|g" "$env_file" 2>/dev/null || true
+        
         # 更新数据库配置（standalone 模式）
+        # 注意：在 Docker 容器内应使用容器名（postgres），而不是用户输入的 host
         if [ "$DEPLOYMENT_MODE" = "standalone" ]; then
             sed -i '' "s|^DATABASE_TYPE=.*|DATABASE_TYPE=postgresql|g" "$env_file" 2>/dev/null || true
-            sed -i '' "s|^DATABASE_HOST=.*|DATABASE_HOST=$DATABASE_HOST|g" "$env_file" 2>/dev/null || true
+            # Docker 容器内使用容器名，而不是用户输入的 host
+            sed -i '' "s|^DATABASE_HOST=.*|DATABASE_HOST=$POSTGRES_CONTAINER_NAME|g" "$env_file" 2>/dev/null || true
             sed -i '' "s|^DATABASE_PORT=.*|DATABASE_PORT=$DATABASE_PORT|g" "$env_file" 2>/dev/null || true
             sed -i '' "s|^DATABASE_NAME=.*|DATABASE_NAME=$DATABASE_NAME|g" "$env_file" 2>/dev/null || true
             sed -i '' "s|^DATABASE_USER=.*|DATABASE_USER=$DATABASE_USER|g" "$env_file" 2>/dev/null || true
@@ -600,6 +626,16 @@ EOF
         # 这里先更新非密钥配置
         sed -i '' "s|^STORAGE_PUBLIC_URL=.*|STORAGE_PUBLIC_URL=$MEDIA_URL|g" "$env_file" 2>/dev/null || true
         sed -i '' "s|^MINIO_PUBLIC_URL=.*|MINIO_PUBLIC_URL=$MEDIA_URL|g" "$env_file" 2>/dev/null || true
+        
+        # 更新 MinIO 容器内配置（使用容器名）
+        sed -i '' "s|^STORAGE_ENDPOINT=.*|STORAGE_ENDPOINT=$MINIO_CONTAINER_NAME|g" "$env_file" 2>/dev/null || true
+        sed -i '' "s|^MINIO_ENDPOINT_HOST=.*|MINIO_ENDPOINT_HOST=$MINIO_CONTAINER_NAME|g" "$env_file" 2>/dev/null || true
+        
+        # 更新数据库容器内配置（使用容器名）
+        sed -i '' "s|^DATABASE_HOST=.*|DATABASE_HOST=$POSTGRES_CONTAINER_NAME|g" "$env_file" 2>/dev/null || true
+        
+        # 更新 Redis 容器内配置（使用容器名）
+        sed -i '' "s|^REDIS_HOST=.*|REDIS_HOST=$REDIS_CONTAINER_NAME|g" "$env_file" 2>/dev/null || true
         
         # 更新 Worker 配置
         # WORKER_API_KEY 会在下面合并现有值时处理
@@ -646,9 +682,11 @@ EOF
         sed -i "s|^WORKER_API_URL=.*|WORKER_API_URL=$WORKER_URL|g" "$env_file" 2>/dev/null || true
         
         # 更新数据库配置（standalone 模式）
+        # 注意：在 Docker 容器内应使用容器名（postgres），而不是用户输入的 host
         if [ "$DEPLOYMENT_MODE" = "standalone" ]; then
             sed -i "s|^DATABASE_TYPE=.*|DATABASE_TYPE=postgresql|g" "$env_file" 2>/dev/null || true
-            sed -i "s|^DATABASE_HOST=.*|DATABASE_HOST=$DATABASE_HOST|g" "$env_file" 2>/dev/null || true
+            # Docker 容器内使用容器名，而不是用户输入的 host
+            sed -i "s|^DATABASE_HOST=.*|DATABASE_HOST=$POSTGRES_CONTAINER_NAME|g" "$env_file" 2>/dev/null || true
             sed -i "s|^DATABASE_PORT=.*|DATABASE_PORT=$DATABASE_PORT|g" "$env_file" 2>/dev/null || true
             sed -i "s|^DATABASE_NAME=.*|DATABASE_NAME=$DATABASE_NAME|g" "$env_file" 2>/dev/null || true
             sed -i "s|^DATABASE_USER=.*|DATABASE_USER=$DATABASE_USER|g" "$env_file" 2>/dev/null || true
@@ -667,6 +705,16 @@ EOF
         # 更新 MinIO 配置
         sed -i "s|^STORAGE_PUBLIC_URL=.*|STORAGE_PUBLIC_URL=$MEDIA_URL|g" "$env_file" 2>/dev/null || true
         sed -i "s|^MINIO_PUBLIC_URL=.*|MINIO_PUBLIC_URL=$MEDIA_URL|g" "$env_file" 2>/dev/null || true
+        
+        # 更新 MinIO 容器内配置（使用容器名）
+        sed -i "s|^STORAGE_ENDPOINT=.*|STORAGE_ENDPOINT=$MINIO_CONTAINER_NAME|g" "$env_file" 2>/dev/null || true
+        sed -i "s|^MINIO_ENDPOINT_HOST=.*|MINIO_ENDPOINT_HOST=$MINIO_CONTAINER_NAME|g" "$env_file" 2>/dev/null || true
+        
+        # 更新数据库容器内配置（使用容器名）
+        sed -i "s|^DATABASE_HOST=.*|DATABASE_HOST=$POSTGRES_CONTAINER_NAME|g" "$env_file" 2>/dev/null || true
+        
+        # 更新 Redis 容器内配置（使用容器名）
+        sed -i "s|^REDIS_HOST=.*|REDIS_HOST=$REDIS_CONTAINER_NAME|g" "$env_file" 2>/dev/null || true
         
         # 添加安全配置
         if ! grep -q "^ALBUM_SESSION_SECRET=" "$env_file" 2>/dev/null; then
