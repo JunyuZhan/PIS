@@ -1569,6 +1569,32 @@ main() {
     echo "  • 服务器端口 8088 可用（HTTP 访问端口）"
     echo "  • 域名已解析到服务器（如果使用域名和 SSL）"
     echo ""
+    
+    # 验证关键文件是否存在
+    local compose_file="$DOCKER_DIR/docker-compose.yml"
+    local env_example="$PROJECT_ROOT/.env.example"
+    
+    if [ ! -f "$compose_file" ]; then
+        print_error "关键文件缺失：docker-compose.yml"
+        echo ""
+        echo -e "${YELLOW}文件路径:${NC} $compose_file"
+        echo -e "${YELLOW}当前目录:${NC} $(pwd)"
+        echo ""
+        echo -e "${CYAN}请检查：${NC}"
+        echo "  1. 文件是否存在于 docker/ 目录"
+        echo "  2. 是否已执行 git pull 拉取最新代码"
+        echo "  3. 是否在正确的项目目录下运行脚本"
+        echo ""
+        echo -e "${CYAN}建议操作：${NC}"
+        echo "  cd $PROJECT_ROOT"
+        echo "  git pull"
+        echo "  ls -la docker/docker-compose.yml"
+        exit 1
+    fi
+    
+    if [ ! -f "$env_example" ]; then
+        print_warning ".env.example 文件不存在，将使用默认配置生成"
+    fi
 
     if ! get_confirm "是否继续？" "y"; then
         echo "部署已取消"
