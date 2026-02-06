@@ -451,6 +451,7 @@ export class PhotoProcessor {
 
     // Add Watermark
     if (watermarkConfig?.enabled) {
+      console.log(`[Watermark] Config:`, JSON.stringify(watermarkConfig));
       const watermarkStartTime = Date.now();
       const width = previewWidth;
       const height = previewHeight;
@@ -466,12 +467,14 @@ export class PhotoProcessor {
 
           // Parallel processing of multiple watermarks (performance optimization)
           const enabledWatermarks = watermarkConfig.watermarks.filter(w => w.enabled !== false);
+          console.log(`[Watermark] Enabled watermarks: ${enabledWatermarks.length}`, JSON.stringify(enabledWatermarks));
           const watermarkPromises = enabledWatermarks.map(watermark =>
             this.createWatermarkBuffer(watermark, width, height)
           );
 
           // Create all watermark buffers in parallel
           const watermarkBuffers = await Promise.all(watermarkPromises);
+          console.log(`[Watermark] Created buffers: ${watermarkBuffers.filter(b => b !== null).length}/${watermarkBuffers.length}`);
 
           // Build composites array
           for (let i = 0; i < enabledWatermarks.length; i++) {
