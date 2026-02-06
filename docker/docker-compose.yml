@@ -270,8 +270,12 @@ services:
       # 日志配置
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - ENABLE_PRETTY_LOG=${ENABLE_PRETTY_LOG:-false}
+      # Git 仓库路径（用于升级检查功能）
+      - PROJECT_ROOT=/opt/pis
     volumes:
       - pis_web_logs:/app/logs
+      # 挂载项目根目录（只读），用于升级检查功能访问 Git 仓库
+      - ../:/opt/pis:ro
     # ports:
     #   - "8081:3000" # Web 前端端口 (由 Nginx 代理)
     depends_on:
