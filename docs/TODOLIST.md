@@ -257,9 +257,9 @@
   - [x] 字体选择（衬线/无衬线字体）
   - [x] 动画效果（淡入、滑入、缩放）
   - [x] 悬停效果（缩放、浮起、发光、遮罩）
-- [ ] 自定义模板
-  - [ ] 模板编辑器（待实现）
-  - [ ] 模板导入/导出（待实现）
+- [x] 自定义模板
+  - [x] 模板编辑器（TemplateStyleEditor 组件）
+  - [x] 模板导入/导出（API + 管理界面）
 
 **已完成的技术实现：**
 ```
@@ -289,6 +289,17 @@
    - 相册设置页面添加模板选择
    - 相册浏览页面自动应用模板样式
    - API 支持模板字段更新
+
+6. 自定义模板编辑器
+   - 数据库表: style_templates（存储自定义样式模板）
+   - API: /api/admin/style-templates (GET/POST)
+   - API: /api/admin/style-templates/[id] (GET/PATCH/DELETE)
+   - API: /api/admin/style-templates/export (GET)
+   - API: /api/admin/style-templates/import (POST)
+   - 组件: components/admin/template-style-editor.tsx（模板编辑器）
+   - 组件: components/admin/style-template-manager.tsx（模板管理器）
+   - 页面: /admin/settings/style-templates
+   - 功能: 主题颜色、字体排版、布局设置、封面样式、动效悬停
 ```
 
 ### 6. 客户管理 ✅ 已完成

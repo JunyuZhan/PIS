@@ -16,6 +16,7 @@ import {
   Sparkles,
   Settings,
   Languages,
+  Palette,
 } from "lucide-react";
 import { ChangePasswordForm } from "@/components/admin/change-password-form";
 import { TemplateManager } from "@/components/admin/template-manager";
@@ -261,6 +262,24 @@ export default async function SettingsPage() {
         >
           <p className="font-medium">语言包管理</p>
           <p className="text-sm text-text-muted">查看和编辑系统翻译字符串</p>
+        </a>
+      </div>
+
+      {/* 样式模板管理 */}
+      <div className="card">
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Palette className="w-5 h-5 text-accent" />
+          样式模板
+        </h2>
+        <p className="text-sm text-text-muted mb-4">
+          创建和管理相册的视觉样式模板，包括主题颜色、字体排版、布局效果等
+        </p>
+        <a
+          href="/admin/settings/style-templates"
+          className="block p-3 bg-surface rounded-lg hover:bg-surface-elevated transition-colors cursor-pointer"
+        >
+          <p className="font-medium">样式模板编辑器</p>
+          <p className="text-sm text-text-muted">自定义相册视觉风格，支持导入/导出</p>
         </a>
       </div>
 

@@ -686,6 +686,38 @@ CREATE INDEX IF NOT EXISTS idx_custom_translations_active ON custom_translations
 
 COMMENT ON TABLE custom_translations IS '自定义翻译表，用于覆盖默认翻译字符串';
 
+-- ============================================
+-- 自定义样式模板表
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS style_templates (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(200) NOT NULL,
+    description TEXT,
+    category VARCHAR(50) DEFAULT 'general',
+    -- 样式配置（JSON）
+    theme_config JSONB NOT NULL DEFAULT '{}',
+    typography_config JSONB NOT NULL DEFAULT '{}',
+    layout_config JSONB NOT NULL DEFAULT '{}',
+    hero_config JSONB NOT NULL DEFAULT '{}',
+    hover_config JSONB NOT NULL DEFAULT '{}',
+    animation_config JSONB NOT NULL DEFAULT '{}',
+    -- 元数据
+    thumbnail_url TEXT,
+    is_builtin BOOLEAN DEFAULT false,
+    is_public BOOLEAN DEFAULT true,
+    sort_order INTEGER DEFAULT 0,
+    created_by UUID REFERENCES users(id),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_style_templates_category ON style_templates(category);
+CREATE INDEX IF NOT EXISTS idx_style_templates_is_public ON style_templates(is_public);
+CREATE INDEX IF NOT EXISTS idx_style_templates_sort_order ON style_templates(sort_order);
+
+COMMENT ON TABLE style_templates IS '自定义样式模板表，存储用户创建的相册视觉样式';
+
 -- 初始化完成提示
 -- ============================================
 DO $$
@@ -707,6 +739,7 @@ BEGIN
     RAISE NOTICE '   - notifications 表: 存储客户通知记录';
     RAISE NOTICE '   - email_config 表: 存储邮件配置';
     RAISE NOTICE '   - custom_translations 表: 存储自定义翻译';
+    RAISE NOTICE '   - style_templates 表: 存储自定义样式模板';
     RAISE NOTICE '';
     RAISE NOTICE '👤 默认用户账户:';
     RAISE NOTICE '   - 管理员: admin@pis.com';
