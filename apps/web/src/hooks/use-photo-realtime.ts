@@ -5,6 +5,7 @@ import type { Photo } from '@/types/database'
 
 interface UsePhotoRealtimeOptions {
   albumId: string
+  albumSlug: string // 公开 API 使用 slug，不是 id
   enabled?: boolean
   onInsert?: (photo: Photo) => void
   onUpdate?: (photo: Photo) => void
@@ -21,6 +22,7 @@ interface UsePhotoRealtimeOptions {
  * ```tsx
  * usePhotoRealtime({
  *   albumId: album.id,
+ *   albumSlug: album.slug, // 公开 API 使用 slug
  *   enabled: true,
  *   onInsert: (photo) => {
  *     // 新照片插入，添加到列表
@@ -39,6 +41,7 @@ interface UsePhotoRealtimeOptions {
  */
 export function usePhotoRealtime({
   albumId,
+  albumSlug,
   enabled = true,
   onInsert,
   onUpdate,
@@ -52,11 +55,12 @@ export function usePhotoRealtime({
   const knownPhotoIdsRef = useRef<Set<string>>(new Set())
 
   const checkForUpdates = useCallback(async () => {
-    if (!albumId) return
+    if (!albumId || !albumSlug) return
 
     try {
       // 获取最新的照片列表（只获取 completed 状态且未删除的照片）
-      const response = await fetch(`/api/public/albums/${albumId}/photos?limit=100&sort=capture_desc`)
+      // 公开 API 使用 slug，不是 id
+      const response = await fetch(`/api/public/albums/${albumSlug}/photos?limit=100&sort=capture_desc`)
       if (!response.ok) return
 
       const data = await response.json()
@@ -86,10 +90,10 @@ export function usePhotoRealtime({
     } catch (error) {
       console.error('Failed to check for photo updates:', error)
     }
-  }, [albumId])
+  }, [albumId, albumSlug])
 
   useEffect(() => {
-    if (!enabled || !albumId) return
+    if (!enabled || !albumId || !albumSlug) return
 
     // 初始化已知照片ID
     checkForUpdates()
@@ -105,7 +109,7 @@ export function usePhotoRealtime({
       clearInterval(intervalId)
       knownPhotoIds.clear()
     }
-  }, [albumId, enabled, checkForUpdates])
+  }, [albumId, albumSlug, enabled, checkForUpdates])
 }
 
 /**

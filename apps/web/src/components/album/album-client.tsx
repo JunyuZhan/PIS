@@ -119,6 +119,7 @@ export function AlbumClient({ album, initialPhotos, layout = 'masonry' }: AlbumC
   // 实时监听照片更新
   usePhotoRealtime({
     albumId: album.id,
+    albumSlug: album.slug,
     enabled: true,
     onInsert: useCallback((photo: Photo) => {
       // 检查是否是新照片（避免重复计数）
