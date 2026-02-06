@@ -291,12 +291,11 @@ export class PhotoProcessor {
       processedImage = processedImage.gamma(config.gamma);
     }
 
-    // ========== 步骤 4: Apply tint (color temperature simulation) ==========
-    // 色调叠加，在最后应用
-    // Sharp 的 .tint() 效果较强，如果发现成片偏色过重，可能需要调整
-    if (config.tint) {
-      processedImage = processedImage.tint(config.tint);
-    }
+    // ========== 步骤 4: Skip tint ==========
+    // 注意：Sharp 的 tint() 会强制替换图像的色度（chrominance），
+    // 导致图像变成单色调（类似灰度着色），不适合用于色温调整。
+    // 色温效果已通过 hue 参数实现，tint 参数暂时忽略。
+    // 如需更精细的色温控制，可考虑使用 recomb() 颜色矩阵变换。
 
     return processedImage;
   }
