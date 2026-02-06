@@ -63,6 +63,9 @@ export interface Database {
           location: string | null
           // 直播模式
           is_live: boolean
+          // 样式模板
+          template_id: string | null
+          template_config: Json
           // 统计
           photo_count: number
           selected_count: number
@@ -104,6 +107,8 @@ export interface Database {
           event_date?: string | null
           location?: string | null
           is_live?: boolean
+          template_id?: string | null
+          template_config?: Json
           photo_count?: number
           selected_count?: number
           view_count?: number
@@ -142,6 +147,8 @@ export interface Database {
           event_date?: string | null
           location?: string | null
           is_live?: boolean
+          template_id?: string | null
+          template_config?: Json
           photo_count?: number
           selected_count?: number
           view_count?: number

@@ -7,6 +7,7 @@ import type { Database } from '@/types/database'
 import { MultiWatermarkManager, type WatermarkItem } from './multi-watermark-manager'
 import { StylePresetSelector } from './style-preset-selector'
 import { StorageChecker } from './storage-checker'
+import { TemplateSelector } from './template-selector'
 import { showSuccess, handleApiError } from '@/lib/toast'
 import { getSafeMediaUrl, getFtpServerHost, getFtpServerPort } from '@/lib/utils'
 
@@ -103,6 +104,9 @@ export function AlbumSettingsForm({ album, coverOriginalKey }: AlbumSettingsForm
   // 解析调色配置
   const initialColorGrading = album.color_grading as { preset?: string } | null
   const initialStylePresetId = initialColorGrading?.preset || null
+  
+  // 解析模板配置
+  const initialTemplateId = (album as { template_id?: string | null }).template_id || null
 
   const [formData, setFormData] = useState({
     title: album.title,
@@ -138,6 +142,8 @@ export function AlbumSettingsForm({ album, coverOriginalKey }: AlbumSettingsForm
     poster_image_url: album.poster_image_url || '',
     // 调色配置
     color_grading: initialStylePresetId,
+    // 模板配置
+    template_id: initialTemplateId,
   })
 
   // 获取默认水印配置（单个水印对象）
@@ -884,6 +890,22 @@ export function AlbumSettingsForm({ album, coverOriginalKey }: AlbumSettingsForm
             />
           </div>
         )}
+      </section>
+
+      {/* 模板设置 */}
+      <section className="card space-y-4">
+        <TemplateSelector
+          value={formData.template_id}
+          onChange={(templateId) => handleChange('template_id', templateId)}
+          coverImage={
+            coverOriginalKey && mediaUrl
+              ? `${mediaUrl.replace(/\/$/, '')}/${coverOriginalKey.replace(/^\//, '')}`
+              : undefined
+          }
+        />
+        <p className="text-xs text-text-muted">
+          模板决定相册的整体视觉风格，包括配色、布局、字体等。选择模板后，访客查看相册时将使用该模板的样式。
+        </p>
       </section>
 
       {/* 风格设置 */}

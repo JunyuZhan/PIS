@@ -76,6 +76,9 @@ CREATE TABLE IF NOT EXISTS albums (
     location TEXT,  -- 活动地点
     -- 直播模式
     is_live BOOLEAN DEFAULT false,
+    -- 样式模板
+    template_id VARCHAR(100) DEFAULT NULL,  -- 模板 ID（如 wedding_classic, event_vibrant）
+    template_config JSONB DEFAULT '{}',     -- 自定义模板配置
     -- 统计
     selected_count INTEGER DEFAULT 0,
     view_count INTEGER DEFAULT 0,

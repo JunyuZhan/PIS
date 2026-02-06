@@ -11,6 +11,7 @@ import { PhotoGroupFilter } from '@/components/album/photo-group-filter'
 import { FloatingActions } from '@/components/album/floating-actions'
 import { SortToggle, type SortRule } from '@/components/album/sort-toggle'
 import { LayoutToggle, type LayoutMode } from '@/components/album/layout-toggle'
+import { TemplateStyleProvider } from '@/components/album/template-style-provider'
 import { getAlbumShareUrl, getAppBaseUrl, getSafeMediaUrl } from '@/lib/utils'
 import type { Database } from '@/types/database'
 
@@ -301,8 +302,12 @@ export default async function AlbumPage({ params, searchParams }: AlbumPageProps
   // - 如果是分享链接（没有 from 参数），显示启动页
   // - 如果 skip_splash=1，不显示启动页
   const showSplash = from !== 'home' && skip_splash !== '1'
+  
+  // 获取相册的模板 ID
+  const templateId = (album as { template_id?: string | null }).template_id || null
 
   return (
+    <TemplateStyleProvider templateId={templateId}>
     <main className="min-h-screen bg-background">
       {/* 启动页（总是显示，除非已跳过） */}
       {showSplash && (
@@ -360,5 +365,6 @@ export default async function AlbumPage({ params, searchParams }: AlbumPageProps
       {/* 浮动操作按钮组 */}
       <FloatingActions album={album} currentSort={currentSort} currentLayout={currentLayout} />
     </main>
+    </TemplateStyleProvider>
   )
 }

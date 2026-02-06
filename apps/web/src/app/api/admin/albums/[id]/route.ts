@@ -240,6 +240,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (validatedData.location !== undefined) {
       updateData.location = validatedData.location?.trim() || null
     }
+    if ((validatedData as { template_id?: string | null }).template_id !== undefined) {
+      (updateData as { template_id?: string | null }).template_id = (validatedData as { template_id?: string | null }).template_id || null
+    }
 
     // 先检查相册是否存在（避免 deleted_at: null 在 update 方法中无法正确处理）
     const existingAlbum = await db

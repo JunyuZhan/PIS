@@ -321,6 +321,7 @@ export const updateAlbumSchema = z
     poster_image_url: z.string().url().optional().or(z.null()),
     event_date: z.string().datetime().optional().or(z.null()),
     location: z.string().max(200).optional().or(z.null()),
+    template_id: z.string().max(100).optional().or(z.null()), // 相册样式模板 ID
   })
   .superRefine((data, ctx) => {
     // 验证 URL 不能是内网地址（SSRF 防护）
