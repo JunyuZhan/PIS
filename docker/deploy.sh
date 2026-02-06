@@ -533,6 +533,9 @@ EOF
         local MINIO_CONTAINER_NAME="pis-minio"
         local POSTGRES_CONTAINER_NAME="postgres"
         local REDIS_CONTAINER_NAME="redis"
+        local WORKER_CONTAINER_NAME="pis-worker"
+        # Worker 服务端内部地址（容器间通信）
+        local WORKER_INTERNAL_URL="http://${WORKER_CONTAINER_NAME}:3001"
         
         cat >> "$env_file" << EOF
 
@@ -547,8 +550,12 @@ STORAGE_PUBLIC_URL=$MEDIA_URL
 MINIO_PUBLIC_URL=$MEDIA_URL
 
 # ==================== Worker 配置 ====================
-WORKER_API_KEY=$WORKER_API_KEY
+# Worker API URL（服务端使用，容器内部地址）
+WORKER_URL=$WORKER_INTERNAL_URL
+WORKER_API_URL=$WORKER_INTERNAL_URL
+# Worker API 公网 URL（前端使用，通过 Nginx 代理）
 NEXT_PUBLIC_WORKER_URL=$WORKER_URL
+WORKER_API_KEY=$WORKER_API_KEY
 
 # ==================== 安全配置 ====================
 ALBUM_SESSION_SECRET=$ALBUM_SESSION_SECRET
@@ -582,14 +589,18 @@ EOF
     local POSTGRES_CONTAINER_NAME="postgres"
     local REDIS_CONTAINER_NAME="redis"
     local WORKER_CONTAINER_NAME="pis-worker"
+    # Worker 服务端内部地址（容器间通信）
+    local WORKER_INTERNAL_URL="http://${WORKER_CONTAINER_NAME}:3001"
     
     if [[ "$OSTYPE" == "darwin"* ]]; then
         sed -i '' "s|^DOMAIN=.*|DOMAIN=$DOMAIN|g" "$env_file" 2>/dev/null || true
         sed -i '' "s|^NEXT_PUBLIC_APP_URL=.*|NEXT_PUBLIC_APP_URL=$APP_URL|g" "$env_file" 2>/dev/null || true
         sed -i '' "s|^NEXT_PUBLIC_MEDIA_URL=.*|NEXT_PUBLIC_MEDIA_URL=$MEDIA_URL|g" "$env_file" 2>/dev/null || true
+        # 前端使用公网地址（通过 Nginx 代理）
         sed -i '' "s|^NEXT_PUBLIC_WORKER_URL=.*|NEXT_PUBLIC_WORKER_URL=$WORKER_URL|g" "$env_file" 2>/dev/null || true
-        sed -i '' "s|^WORKER_URL=.*|WORKER_URL=$WORKER_URL|g" "$env_file" 2>/dev/null || true
-        sed -i '' "s|^WORKER_API_URL=.*|WORKER_API_URL=$WORKER_URL|g" "$env_file" 2>/dev/null || true
+        # 服务端使用容器内部地址
+        sed -i '' "s|^WORKER_URL=.*|WORKER_URL=$WORKER_INTERNAL_URL|g" "$env_file" 2>/dev/null || true
+        sed -i '' "s|^WORKER_API_URL=.*|WORKER_API_URL=$WORKER_INTERNAL_URL|g" "$env_file" 2>/dev/null || true
         
         # 更新 MinIO 容器内配置（使用容器名）
         sed -i '' "s|^STORAGE_ENDPOINT=.*|STORAGE_ENDPOINT=$MINIO_CONTAINER_NAME|g" "$env_file" 2>/dev/null || true
@@ -674,12 +685,17 @@ EOF
         fi
     else
         # Linux 版本
+        # Worker 服务端内部地址（容器间通信）
+        local WORKER_INTERNAL_URL="http://${WORKER_CONTAINER_NAME}:3001"
+        
         sed -i "s|^DOMAIN=.*|DOMAIN=$DOMAIN|g" "$env_file" 2>/dev/null || true
         sed -i "s|^NEXT_PUBLIC_APP_URL=.*|NEXT_PUBLIC_APP_URL=$APP_URL|g" "$env_file" 2>/dev/null || true
         sed -i "s|^NEXT_PUBLIC_MEDIA_URL=.*|NEXT_PUBLIC_MEDIA_URL=$MEDIA_URL|g" "$env_file" 2>/dev/null || true
+        # 前端使用公网地址（通过 Nginx 代理）
         sed -i "s|^NEXT_PUBLIC_WORKER_URL=.*|NEXT_PUBLIC_WORKER_URL=$WORKER_URL|g" "$env_file" 2>/dev/null || true
-        sed -i "s|^WORKER_URL=.*|WORKER_URL=$WORKER_URL|g" "$env_file" 2>/dev/null || true
-        sed -i "s|^WORKER_API_URL=.*|WORKER_API_URL=$WORKER_URL|g" "$env_file" 2>/dev/null || true
+        # 服务端使用容器内部地址
+        sed -i "s|^WORKER_URL=.*|WORKER_URL=$WORKER_INTERNAL_URL|g" "$env_file" 2>/dev/null || true
+        sed -i "s|^WORKER_API_URL=.*|WORKER_API_URL=$WORKER_INTERNAL_URL|g" "$env_file" 2>/dev/null || true
         
         # 更新数据库配置（standalone 模式）
         # 注意：在 Docker 容器内应使用容器名（postgres），而不是用户输入的 host
