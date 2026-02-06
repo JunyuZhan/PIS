@@ -118,12 +118,10 @@ services:
       sleep 5;
       mc alias set pis http://pis-minio:9000 $${MINIO_ACCESS_KEY} $${MINIO_SECRET_KEY};
       mc mb pis/pis-photos --ignore-existing || true;
-      # 设置访问策略（注意：在对象存储中，raw/ 和 processed/ 是前缀，不是真正的目录）
-      # 只公开 processed 前缀的文件（缩略图和预览图可以公开访问）
-      mc anonymous set download pis/pis-photos/processed/ || true;
-      # raw 前缀的文件（原图）需要通过应用控制访问
-      mc anonymous set off pis/pis-photos/raw/ || true;
-      echo 'MinIO bucket initialized with access policies';
+      # 设置整个 bucket 为公开下载
+      # 上传需要预签名 URL（有签名验证），下载可以直接访问
+      mc anonymous set download pis/pis-photos || true;
+      echo 'MinIO bucket initialized with public download access';
       exit 0;
       "
     restart: "no" # 只运行一次，Worker 会负责确保 bucket 存在
