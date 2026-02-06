@@ -59,6 +59,10 @@ export class MinIOAdapter implements StorageAdapter {
         secretAccessKey: this.secretKey,
       },
       forcePathStyle: true, // MinIO 需要路径样式
+      // 禁用 checksum 计算，避免 MinIO 兼容性问题
+      // AWS SDK v3 默认会添加 x-amz-checksum-* 参数，MinIO 可能不支持
+      requestChecksumCalculation: 'WHEN_REQUIRED',
+      responseChecksumValidation: 'WHEN_REQUIRED',
     });
   }
 
