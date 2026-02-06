@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
+import { useTranslations } from 'next-intl'
 import { Camera, Images, Settings, LogOut, Home, Brush, Users, BarChart3, UserCheck } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { AuthUser } from '@/lib/auth'
@@ -19,23 +20,25 @@ interface AdminSidebarProps {
   user: AuthUser
 }
 
-const navItems: Array<{
+// 导航项配置（使用翻译键）
+const navItemsConfig: Array<{
   href: string
-  label: string
+  labelKey: string
   icon: React.ComponentType<{ className?: string }>
-  roles?: UserRole[] // 允许访问的角色，如果未指定则所有角色都可以访问
+  roles?: UserRole[]
 }> = [
-  { href: '/admin', label: '相册管理', icon: Images }, // 所有角色都可以访问
-  { href: '/admin/customers', label: '客户管理', icon: UserCheck, roles: ['admin'] }, // 仅管理员
-  { href: '/admin/analytics', label: '数据统计', icon: BarChart3, roles: ['admin'] }, // 仅管理员
-  { href: '/admin/retouch', label: '修图工作台', icon: Brush, roles: ['admin', 'retoucher'] }, // 仅管理员和修图师
-  { href: '/admin/users', label: '用户管理', icon: Users, roles: ['admin'] }, // 仅管理员
-  { href: '/admin/settings', label: '系统设置', icon: Settings, roles: ['admin'] }, // 仅管理员
+  { href: '/admin', labelKey: 'sidebar.albumManagement', icon: Images },
+  { href: '/admin/customers', labelKey: 'sidebar.customerManagement', icon: UserCheck, roles: ['admin'] },
+  { href: '/admin/analytics', labelKey: 'sidebar.analytics', icon: BarChart3, roles: ['admin'] },
+  { href: '/admin/retouch', labelKey: 'sidebar.retouchWorkbench', icon: Brush, roles: ['admin', 'retoucher'] },
+  { href: '/admin/users', labelKey: 'sidebar.userManagement', icon: Users, roles: ['admin'] },
+  { href: '/admin/settings', labelKey: 'sidebar.systemSettings', icon: Settings, roles: ['admin'] },
 ]
 
 export function SidebarContent({ user }: { user: AuthUser }) {
   const pathname = usePathname()
   const router = useRouter()
+  const t = useTranslations('admin')
 
   const handleLogout = async () => {
     try {
@@ -56,8 +59,8 @@ export function SidebarContent({ user }: { user: AuthUser }) {
             <Camera className="w-5 h-5 text-accent" />
           </div>
           <div>
-            <h1 className="font-serif font-bold">PIS</h1>
-            <p className="text-xs text-text-muted">管理后台</p>
+            <h1 className="font-serif font-bold">{t('sidebar.title')}</h1>
+            <p className="text-xs text-text-muted">{t('sidebar.subtitle')}</p>
           </div>
         </Link>
       </div>
@@ -75,13 +78,13 @@ export function SidebarContent({ user }: { user: AuthUser }) {
           )}
         >
           <Home className="w-5 h-5" />
-          <span className="font-medium">返回前端</span>
+          <span className="font-medium">{t('sidebar.backToFrontend')}</span>
         </Link>
       </div>
 
       {/* 导航菜单 */}
       <nav className="flex-1 p-4 space-y-1">
-        {navItems
+        {navItemsConfig
           .filter((item) => {
             // 如果没有指定 roles，所有角色都可以访问
             if (!item.roles) return true
@@ -110,7 +113,7 @@ export function SidebarContent({ user }: { user: AuthUser }) {
                 )}
               >
                 <item.icon className="w-5 h-5" />
-                <span className="font-medium">{item.label}</span>
+                <span className="font-medium">{t(item.labelKey)}</span>
               </Link>
             )
           })}
@@ -137,7 +140,7 @@ export function SidebarContent({ user }: { user: AuthUser }) {
           <button
             onClick={handleLogout}
             className="p-2 text-text-muted hover:text-text-primary transition-colors"
-            title="退出登录"
+            title={t('sidebar.logout')}
           >
             <LogOut className="w-4 h-4" />
           </button>
