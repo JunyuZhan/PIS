@@ -1618,8 +1618,25 @@ main() {
             echo ""
         fi
         
+        # 检查 docker-compose.yml 文件是否存在
+        if [ ! -f "docker-compose.yml" ]; then
+            print_error "找不到 docker-compose.yml 文件"
+            echo ""
+            echo -e "${YELLOW}当前目录:${NC} $(pwd)"
+            echo -e "${YELLOW}期望文件:${NC} docker-compose.yml"
+            echo ""
+            echo -e "${CYAN}请确保在正确的目录下运行脚本${NC}"
+            exit 1
+        fi
+        
         echo -e "${CYAN}正在启动 Docker 服务...${NC}"
-        if $COMPOSE_CMD -f docker-compose.yml up -d 2>&1 | tee /tmp/docker-startup.log; then
+        # 使用 set -o pipefail 确保能捕获管道中任何命令的失败
+        set +e  # 临时禁用 set -e，以便检查退出码
+        $COMPOSE_CMD -f docker-compose.yml up -d 2>&1 | tee /tmp/docker-startup.log
+        local compose_exit_code=${PIPESTATUS[0]}  # 获取 docker compose 的退出码
+        set -e  # 重新启用 set -e
+        
+        if [ "$compose_exit_code" -eq 0 ]; then
             print_success "服务启动成功"
         else
             print_error "服务启动失败，请检查日志"
@@ -1650,7 +1667,24 @@ main() {
         echo -e "${CYAN}正在启动 Docker 基础服务...${NC}"
         
         cd "$DOCKER_DIR"
-        if $COMPOSE_CMD up -d 2>&1 | tee /tmp/docker-startup.log; then
+        
+        # 检查 docker-compose.yml 文件是否存在
+        if [ ! -f "docker-compose.yml" ]; then
+            print_error "找不到 docker-compose.yml 文件"
+            echo ""
+            echo -e "${YELLOW}当前目录:${NC} $(pwd)"
+            echo -e "${YELLOW}期望文件:${NC} docker-compose.yml"
+            echo ""
+            echo -e "${CYAN}请确保在正确的目录下运行脚本${NC}"
+            exit 1
+        fi
+        
+        set +e  # 临时禁用 set -e，以便检查退出码
+        $COMPOSE_CMD up -d 2>&1 | tee /tmp/docker-startup.log
+        local compose_exit_code=${PIPESTATUS[0]}  # 获取 docker compose 的退出码
+        set -e  # 重新启用 set -e
+        
+        if [ "$compose_exit_code" -eq 0 ]; then
             print_success "基础服务启动成功"
         else
             print_error "服务启动失败，请检查日志"
