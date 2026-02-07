@@ -13,6 +13,7 @@ import { locales, defaultLocale, type Locale } from "./i18n/config";
 
 // 扩展 globalThis 类型以支持自定义属性
 declare global {
+  // eslint-disable-next-line no-var
   var middlewareEnvLogged: boolean | undefined;
 }
 

@@ -91,8 +91,8 @@ export async function GET(request: NextRequest) {
     const customerIds = [...new Set(notifications.filter(n => n.customer_id).map(n => n.customer_id as string))]
     const albumIds = [...new Set(notifications.filter(n => n.album_id).map(n => n.album_id as string))]
 
-    let customers: Record<string, { name: string; email: string }> = {}
-    let albums: Record<string, { title: string; slug: string }> = {}
+    const customers: Record<string, { name: string; email: string }> = {}
+    const albums: Record<string, { title: string; slug: string }> = {}
 
     if (customerIds.length > 0) {
       const { data: customerResult } = await db

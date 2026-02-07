@@ -6,7 +6,6 @@ import {
   Type, 
   LayoutGrid, 
   Image, 
-  MousePointer,
   Sparkles,
   Save,
   Download,
@@ -192,7 +191,7 @@ export function TemplateStyleEditor({
     { id: 'theme', label: '主题颜色', icon: <Palette className="w-4 h-4" /> },
     { id: 'typography', label: '字体排版', icon: <Type className="w-4 h-4" /> },
     { id: 'layout', label: '布局设置', icon: <LayoutGrid className="w-4 h-4" /> },
-    { id: 'hero', label: '封面样式', icon: <Image className="w-4 h-4" /> },
+    { id: 'hero', label: '封面样式', icon: <Image className="w-4 h-4" aria-label="封面样式图标" /> },
     { id: 'effects', label: '动效悬停', icon: <Sparkles className="w-4 h-4" /> },
   ]
 

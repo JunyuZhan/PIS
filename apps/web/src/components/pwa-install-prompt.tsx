@@ -264,7 +264,7 @@ export function PWAInstallPrompt() {
                         </p>
                         <p className="flex items-center gap-1">
                           <span className="bg-surface px-1.5 py-0.5 rounded">2</span>
-                          选择"安装应用"或"添加到主屏幕"
+                          选择&ldquo;安装应用&rdquo;或&ldquo;添加到主屏幕&rdquo;
                         </p>
                       </>
                     ) : (
@@ -275,7 +275,7 @@ export function PWAInstallPrompt() {
                         </p>
                         <p className="flex items-center gap-1">
                           <span className="bg-surface px-1.5 py-0.5 rounded">2</span>
-                          选择"安装"或"添加到主屏幕"
+                          选择&ldquo;安装&rdquo;或&ldquo;添加到主屏幕&rdquo;
                         </p>
                       </>
                     )}

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Mail, Loader2, Save, Send, CheckCircle2, XCircle, AlertCircle, Eye, EyeOff } from 'lucide-react'
+import { Loader2, Save, Send, CheckCircle2, XCircle, AlertCircle, Eye, EyeOff } from 'lucide-react'
 import { showSuccess, handleApiError, showError } from '@/lib/toast'
 import { cn } from '@/lib/utils'
 

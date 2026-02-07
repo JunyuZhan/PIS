@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Search, Filter, Edit2, Trash2, RefreshCw, Loader2, Shield, User, Palette, Eye } from 'lucide-react'
+import { Plus, Search, Filter, Edit2, Trash2, Loader2, Shield, User, Palette, Eye } from 'lucide-react'
 import { CreateUserDialog } from './create-user-dialog'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { showSuccess, handleApiError } from '@/lib/toast'
@@ -64,11 +64,7 @@ export function UserList() {
     variant?: 'default' | 'danger'
   } | null>(null)
 
-  useEffect(() => {
-    loadUsers()
-  }, [pagination.page, roleFilter, statusFilter, searchQuery])
-
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     try {
       setLoading(true)
       const params = new URLSearchParams({
@@ -106,7 +102,11 @@ export function UserList() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [pagination.page, pagination.limit, roleFilter, statusFilter, searchQuery])
+
+  useEffect(() => {
+    loadUsers()
+  }, [loadUsers])
 
   const handleDelete = (user: User) => {
     setConfirmDialog({

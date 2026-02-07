@@ -35,7 +35,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const db = await createClient()
 
     // 验证登录状态（管理员）或公开访问（访客）
-    const user = await getCurrentUser(request)
     const admin = await requireAdmin(request)
 
     // 验证相册存在

@@ -181,7 +181,7 @@ export function AlbumList({ initialAlbums }: AlbumListProps) {
                 const refreshData = await refreshResponse.json()
                 if (refreshData.albums) {
                   // 确保只显示未删除的相册（deleted_at 为 null）
-                  const validAlbums = refreshData.albums.filter((a: any) => !a.deleted_at)
+                  const validAlbums = refreshData.albums.filter((a: AlbumWithCover) => !a.deleted_at)
                   setAlbums(validAlbums)
                 }
               }

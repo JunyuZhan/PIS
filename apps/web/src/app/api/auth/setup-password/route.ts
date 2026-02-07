@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
       let authDb: ReturnType<typeof getAuthDatabase>
       try {
         authDb = getAuthDatabase()
-      } catch (initError) {
+      } catch {
         // 如果数据库未初始化，尝试初始化
         console.log('Auth database not initialized, attempting initialization...')
         try {

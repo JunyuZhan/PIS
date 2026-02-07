@@ -20,10 +20,6 @@ interface Customer {
   updated_at: string
 }
 
-interface CustomerAlbumCount {
-  customer_id: string
-}
-
 // 客户创建/更新 schema
 const customerSchema = z.object({
   name: z.string().min(1, '客户姓名不能为空').max(100),

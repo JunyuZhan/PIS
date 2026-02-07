@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { Camera, Heart } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useSettings } from '@/hooks/use-settings'
@@ -81,9 +82,11 @@ export function AlbumFooter() {
                   rel="noopener noreferrer"
                   className="flex items-center gap-1 hover:text-accent transition-colors"
                 >
-                  <img 
+                  <Image 
                     src="/images/police-badge.png" 
                     alt="" 
+                    width={14}
+                    height={14}
                     className="w-3.5 h-3.5"
                     onError={(e) => { e.currentTarget.style.display = 'none' }}
                   />

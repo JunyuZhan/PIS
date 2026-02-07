@@ -290,7 +290,7 @@ export async function POST(request: NextRequest) {
       slug: data.slug,
       title: data.title,
       is_public: data.is_public,
-      upload_token: (data as any).upload_token || finalUploadToken, // 返回生成的令牌
+      upload_token: finalUploadToken, // 返回生成的令牌（已插入数据库）
       shareUrl,
     })
   } catch (error) {

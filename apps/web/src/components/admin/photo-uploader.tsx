@@ -1635,11 +1635,11 @@ export function PhotoUploader({ albumId, onComplete }: PhotoUploaderProps) {
                   </p>
                   <p className="flex items-start gap-2">
                     <span className="text-yellow-400 mt-0.5">⚠</span>
-                    <span><strong>浏览文件系统</strong>：需要点击"浏览"或"文件"，但iOS限制只能<strong>单张点击选择</strong>，不能滑动</span>
+                    <span><strong>浏览文件系统</strong>：需要点击&ldquo;浏览&rdquo;或&ldquo;文件&rdquo;，但iOS限制只能<strong>单张点击选择</strong>，不能滑动</span>
                   </p>
                   <div className="pl-6 pt-1 space-y-1 text-text-muted">
                     <p>• <strong>相机存储卡照片</strong>：建议先导入手机相册，然后从相册多选上传</p>
-                    <p>• <strong>USB连接相机</strong>：在文件选择器中找到"USB存储"或相机名称，但只能单选</p>
+                    <p>• <strong>USB连接相机</strong>：在文件选择器中找到&ldquo;USB存储&rdquo;或相机名称，但只能单选</p>
                   </div>
                 </div>
               ) : (
@@ -1654,7 +1654,7 @@ export function PhotoUploader({ albumId, onComplete }: PhotoUploaderProps) {
                   </p>
                   <p className="flex items-start gap-2">
                     <span className="text-green-400 mt-0.5">✓</span>
-                    <span>或点击右上角菜单选择<strong>"选择多个"</strong>，然后可滑动选择</span>
+                    <span>或点击右上角菜单选择<strong>&ldquo;选择多个&rdquo;</strong>，然后可滑动选择</span>
                   </p>
                   <div className="pl-6 pt-1 space-y-1 text-text-muted">
                     <p>• <strong>相机存储卡</strong>：在文件管理器中找到相机存储卡（通常显示为USB存储），支持多选</p>

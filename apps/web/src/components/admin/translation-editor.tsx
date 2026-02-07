@@ -63,6 +63,7 @@ export function TranslationEditor({
     setActiveLocales(prev => prev.filter(l => l !== locale))
     // 从值中移除该语言
     if (value) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { [locale]: _, ...rest } = value
       onChange(Object.keys(rest).length > 0 ? rest : null)
     }

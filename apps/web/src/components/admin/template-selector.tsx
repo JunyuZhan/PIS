@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import Image from 'next/image'
 import { Check, Layout, Palette, Type, Sparkles, ChevronDown, ChevronUp } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { 
@@ -52,17 +53,19 @@ function TemplatePreviewCard({
       >
         {/* 模拟封面区域 */}
         <div 
-          className="absolute inset-0 flex items-center justify-center"
+          className="absolute inset-0 flex items-center justify-center relative"
           style={{ 
             opacity: template.hero.overlay,
             backgroundColor: 'rgba(0,0,0,0.3)'
           }}
         >
           {coverImage ? (
-            <img 
+            <Image 
               src={coverImage} 
               alt="Preview" 
-              className="w-full h-full object-cover opacity-50"
+              fill
+              className="object-cover opacity-50"
+              unoptimized
             />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-gray-600 to-gray-800 opacity-50" />

@@ -278,7 +278,8 @@ export function AlbumSettingsForm({
         : null
       
       // 从 formData 中提取需要提交的字段，排除 upload_token（通过重置按钮单独更新）
-      const { upload_token, ...formDataWithoutToken } = formData
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { upload_token: _, ...formDataWithoutToken } = formData
       
       const submitData = {
         ...formDataWithoutToken,

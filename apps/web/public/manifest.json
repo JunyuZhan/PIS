@@ -79,7 +79,7 @@
       "short_name": "管理",
       "description": "进入管理后台",
       "url": "/admin",
-      "icons": [{ "src": "/icons/admin-96x96.png", "sizes": "96x96" }]
+      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
     }
   ],
   "share_target": {

@@ -3,16 +3,12 @@
 import { useState } from 'react'
 import { 
   Building2, 
-  FileText, 
   Globe, 
   Link2, 
   Palette, 
   Settings, 
   Save, 
-  Loader2,
-  CheckCircle2,
-  Upload,
-  X
+  Loader2
 } from 'lucide-react'
 import { useAdminSettings } from '@/hooks/use-settings'
 import { showSuccess, handleApiError } from '@/lib/toast'

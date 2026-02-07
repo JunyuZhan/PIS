@@ -24,7 +24,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   RefreshCw,
   Search,
-  Download,
   ChevronLeft,
   ChevronRight,
   FileJson,

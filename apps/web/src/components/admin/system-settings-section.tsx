@@ -8,7 +8,6 @@ import {
   ChevronDown,
   ChevronUp,
   Building2,
-  FileText,
   Globe,
   Link2,
   Palette,
@@ -766,7 +765,7 @@ export function SystemSettingsSection() {
 
 // 可折叠区块组件
 function Section({
-  id,
+  id: _id, // eslint-disable-line @typescript-eslint/no-unused-vars
   title,
   icon,
   expanded,

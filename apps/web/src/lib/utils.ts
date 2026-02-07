@@ -268,6 +268,7 @@ export function generateAlbumSlug(): string {
   // 服务端：使用 Node.js crypto 模块
   if (typeof window === 'undefined' && typeof require !== 'undefined') {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const crypto = require('crypto')
       const bytes = crypto.randomBytes(8)
       for (let i = 0; i < 8; i++) {
@@ -332,6 +333,7 @@ export function generateUploadToken(length: number = 8): string {
   // 服务端：使用 Node.js crypto 模块
   if (typeof window === 'undefined' && typeof require !== 'undefined') {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const crypto = require('crypto')
       const bytes = crypto.randomBytes(length)
       for (let i = 0; i < length; i++) {
