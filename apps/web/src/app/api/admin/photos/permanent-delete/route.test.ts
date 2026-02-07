@@ -1129,6 +1129,31 @@ describe('POST /api/admin/photos/permanent-delete', () => {
         error: null,
       })
 
+      // 模拟查询第一张照片（用于设置新封面）
+      // 需要支持链式调用：select().eq(album_id).eq(status).is(deleted_at).order().limit()
+      const mockFirstPhotoLimit = vi.fn().mockResolvedValue({
+        data: [{ id: '123e4567-e89b-12d3-a456-426614174002' }], // 第一张照片
+        error: null,
+      })
+      const mockFirstPhotoOrder = vi.fn().mockReturnValue({
+        limit: mockFirstPhotoLimit,
+      })
+      const mockFirstPhotoIs = vi.fn().mockReturnValue({
+        order: mockFirstPhotoOrder,
+      })
+      // 第二次 eq 调用 (status) 后返回包含 is 方法的对象
+      const mockFirstPhotoEq2 = vi.fn().mockReturnValue({
+        is: mockFirstPhotoIs,
+      })
+      // 第一次 eq 调用 (album_id) 后返回包含 eq 方法的对象，以便链式调用第二次 eq
+      const mockFirstPhotoEq1 = vi.fn().mockReturnValue({
+        eq: mockFirstPhotoEq2,
+      })
+      // select 调用后返回包含 eq 方法的对象
+      const mockFirstPhotoSelect = vi.fn().mockReturnValue({
+        eq: mockFirstPhotoEq1,
+      })
+
       const mockCountSelect = vi.fn().mockReturnThis()
       const mockCountEq = vi.fn().mockReturnThis()
       const mockCountIs = vi.fn().mockResolvedValue({
@@ -1148,33 +1173,48 @@ describe('POST /api/admin/photos/permanent-delete', () => {
         }
         callCount++
         if (callCount === 1) {
+          // 查询要删除的照片
           return {
             select: mockSelect,
             in: mockIn,
             not: mockNot,
           }
         } else if (callCount === 2) {
+          // 查询相册信息
           return {
             select: mockAlbumsSelect,
             in: mockAlbumsIn,
           }
         } else if (callCount === 3) {
+          // 查询第一张照片（用于设置新封面）
+          return {
+            select: mockFirstPhotoSelect,
+          }
+        } else if (callCount === 4) {
+          // 查询照片计数
           return {
             select: mockCountSelect,
             eq: mockCountEq,
             is: mockCountIs,
           }
         } else {
+          // 其他查询（不应该到达这里）
           return {
-            update: mockUpdate,
-            eq: mockUpdateEq,
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            is: vi.fn().mockResolvedValue({ data: [], error: null }),
           }
         }
       })
 
       mockCountSelect.mockReturnThis()
       mockCountEq.mockReturnThis()
-      mockUpdate.mockReturnThis()
+
+      // Mock delete 操作
+      mockAdminClient.delete.mockResolvedValue({
+        data: [],
+        error: null,
+      })
 
       global.fetch = vi.fn().mockResolvedValue({
         ok: true,
@@ -1194,8 +1234,12 @@ describe('POST /api/admin/photos/permanent-delete', () => {
       expect(response.status).toBe(200)
       expect(data.data.success).toBe(true)
       
-      // 验证更新了相册封面
-      expect(mockAdminClient.update).toHaveBeenCalledWith('albums', { cover_photo_id: null }, { 'id[]': ['123e4567-e89b-12d3-a456-426614174001'] })
+      // 验证更新了相册封面（设置为第一张照片）
+      expect(mockAdminClient.update).toHaveBeenCalledWith(
+        'albums', 
+        { cover_photo_id: '123e4567-e89b-12d3-a456-426614174002' }, 
+        { id: '123e4567-e89b-12d3-a456-426614174001' }
+      )
     })
 
     it('should update album photo count', async () => {

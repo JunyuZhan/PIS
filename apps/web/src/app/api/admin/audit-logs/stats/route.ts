@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
 
     // 获取各类统计数据
     const [
-      { data: totalCount },
+      { count: totalCount },
       { data: actionStats },
       { data: resourceStats },
       { data: userStats },
@@ -149,7 +149,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       period: { days, startDate: startDateStr },
-      total: totalCount || 0,
+      total: typeof totalCount === 'number' ? totalCount : (totalCount || 0),
       byAction: actionStatsResult || [],
       byResource: resourceStatsResult || [],
       byUser: userStatsResult || [],

@@ -490,6 +490,103 @@ describe('DELETE /api/admin/albums/[id]/photos', () => {
       expect(mockDb.update).toHaveBeenCalledWith('albums', expect.objectContaining({ photo_count: expect.any(Number) }), { id: albumId })
     })
 
+    it('should update album cover to first photo when cover photo is deleted', async () => {
+      const albumId = '550e8400-e29b-41d4-a716-446655440000'
+      const coverPhotoId = '550e8400-e29b-41d4-a716-446655440001'
+      const firstPhotoId = '550e8400-e29b-41d4-a716-446655440003'
+      const photoIds = [coverPhotoId] // 删除封面照片
+      
+      const album = {
+        id: albumId,
+        slug: 'test-album',
+        cover_photo_id: coverPhotoId, // 封面照片将被删除
+      }
+      
+      const photosToDelete = [
+        {
+          id: coverPhotoId,
+          original_key: 'original-cover.jpg',
+          thumb_key: 'thumb-cover.jpg',
+          preview_key: 'preview-cover.jpg',
+        },
+      ]
+
+      let callCount = 0
+      mockDb.from.mockImplementation((table: string) => {
+        if (table === 'albums') {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            is: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({
+              data: album,
+              error: null,
+            }),
+          }
+        }
+        if (table === 'photos') {
+          callCount++
+          if (callCount === 1) {
+            // 第一次查询：验证要删除的照片
+            return {
+              select: vi.fn().mockReturnThis(),
+              eq: vi.fn().mockReturnThis(),
+              is: vi.fn().mockReturnThis(),
+              in: vi.fn().mockResolvedValue({
+                data: photosToDelete,
+                error: null,
+              }),
+            }
+          } else if (callCount === 2) {
+            // 第二次查询：查找第一张照片（用于设置新封面）
+            return {
+              select: vi.fn().mockReturnThis(),
+              eq: vi.fn().mockReturnThis(),
+              is: vi.fn().mockReturnThis(),
+              order: vi.fn().mockReturnThis(),
+              limit: vi.fn().mockResolvedValue({
+                data: [{ id: firstPhotoId }], // 第一张照片
+                error: null,
+              }),
+            }
+          } else {
+            // 第三次查询：统计照片数量
+            return {
+              select: vi.fn().mockReturnThis(),
+              eq: vi.fn().mockReturnThis(),
+              is: vi.fn().mockReturnThis(),
+              execute: vi.fn().mockResolvedValue({
+                data: [],
+                count: 0,
+                error: null,
+              }),
+            }
+          }
+        }
+        return mockDb.from()
+      })
+
+      const request = createMockRequest(
+        `http://localhost:3000/api/admin/albums/${albumId}/photos`,
+        { method: 'DELETE', body: { photoIds } }
+      )
+
+      const response = await DELETE(request, {
+        params: Promise.resolve({ id: albumId }),
+      })
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.success).toBe(true)
+      
+      // 验证更新了相册封面为第一张照片
+      expect(mockDb.update).toHaveBeenCalledWith(
+        'albums', 
+        { cover_photo_id: firstPhotoId }, 
+        { id: albumId }
+      )
+    })
+
     it('should return 404 if album does not exist', async () => {
       const albumId = '550e8400-e29b-41d4-a716-446655440000'
 

@@ -362,8 +362,24 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       console.warn('[Delete Photos] Cloudflare API not configured (missing CLOUDFLARE_ZONE_ID or CLOUDFLARE_API_TOKEN), skipping cache purge')
     }
 
+    // 如果封面照片被删除，自动使用第一张照片作为新封面
     if (albumData.cover_photo_id && validPhotoIds.includes(albumData.cover_photo_id)) {
-      await db.update('albums', { cover_photo_id: null }, { id })
+      // 查找第一张未删除的照片作为新封面
+      const firstPhotoResult = await db
+        .from('photos')
+        .select('id')
+        .eq('album_id', id)
+        .eq('status', 'completed')
+        .is('deleted_at', null)
+        .order('captured_at', { ascending: false })
+        .limit(1)
+      
+      // 如果查询成功且有数据，使用第一张照片；否则设置为 null
+      const newCoverPhotoId = firstPhotoResult.data && firstPhotoResult.data.length > 0
+        ? (firstPhotoResult.data[0] as { id: string }).id
+        : null
+      
+      await db.update('albums', { cover_photo_id: newCoverPhotoId }, { id })
     }
 
     // 更新相册的照片计数（重新统计 completed 状态且未删除的照片）

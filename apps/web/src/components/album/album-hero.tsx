@@ -125,9 +125,19 @@ export function AlbumHero({ album, coverPhoto, from }: AlbumHeroProps) {
         <div className="absolute inset-0 bg-gradient-to-br from-surface via-surface-elevated to-background" />
       )}
 
-      {/* 渐变遮罩 */}
-      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
-      <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-transparent to-background/80" />
+      {/* 渐变遮罩 - 根据是否有背景图片调整遮罩强度 */}
+      {coverUrl ? (
+        <>
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-transparent to-background/80" />
+        </>
+      ) : (
+        <>
+          {/* 无背景图片时使用更轻的遮罩，确保文字可见 */}
+          <div className="absolute inset-0 bg-gradient-to-t from-background/40 via-background/20 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-background/40 via-transparent to-background/40" />
+        </>
+      )}
 
             {/* 返回首页按钮 */}
             {from === 'home' && (
@@ -138,7 +148,11 @@ export function AlbumHero({ album, coverPhoto, from }: AlbumHeroProps) {
               >
                 <Link
                   href="/"
-                  className="flex items-center gap-2 px-4 py-2 bg-black/20 hover:bg-black/40 backdrop-blur-md rounded-full text-white/90 hover:text-white transition-colors"
+                  className={`flex items-center gap-2 px-4 py-2 backdrop-blur-md rounded-full transition-colors ${
+                    coverUrl
+                      ? 'bg-black/20 hover:bg-black/40 text-white/90 hover:text-white'
+                      : 'bg-surface-elevated/80 hover:bg-surface-elevated text-text-primary border border-border'
+                  }`}
                 >
                   <ArrowLeft className="w-4 h-4" />
                   <span className="text-sm font-medium">返回首页</span>
@@ -166,18 +180,34 @@ export function AlbumHero({ album, coverPhoto, from }: AlbumHeroProps) {
                 <span className="text-[10px] md:text-xs font-medium text-background">直播中</span>
               </div>
             ) : (
-              <div className="flex items-center gap-1.5 px-2 py-1 md:px-3 md:py-1.5 bg-white/20 backdrop-blur-sm rounded-full">
+              <div className={`flex items-center gap-1.5 px-2 py-1 md:px-3 md:py-1.5 backdrop-blur-sm rounded-full ${
+                coverUrl
+                  ? 'bg-white/20'
+                  : 'bg-surface-elevated/80 border border-border'
+              }`}>
                 <span className="relative flex h-1.5 w-1.5 md:h-2 md:w-2">
-                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 md:h-2 md:w-2 bg-white/60"></span>
+                  <span className={`relative inline-flex rounded-full h-1.5 w-1.5 md:h-2 md:w-2 ${
+                    coverUrl ? 'bg-white/60' : 'bg-accent/60'
+                  }`}></span>
                 </span>
-                <span className="text-[10px] md:text-xs font-medium text-white/90">已结束</span>
+                <span className={`text-[10px] md:text-xs font-medium ${
+                  coverUrl ? 'text-white/90' : 'text-text-secondary'
+                }`}>已结束</span>
               </div>
             )}
 
             {/* 浏览量 */}
-            <div className="flex items-center gap-1 px-2 py-1 md:px-3 md:py-1.5 bg-white/10 backdrop-blur-sm rounded-full">
-              <Eye className="w-3 h-3 md:w-3.5 md:h-3.5 text-white/80" />
-              <span className="text-[10px] md:text-xs font-medium text-white/90">{viewCount} 浏览</span>
+            <div className={`flex items-center gap-1 px-2 py-1 md:px-3 md:py-1.5 backdrop-blur-sm rounded-full ${
+              coverUrl
+                ? 'bg-white/10'
+                : 'bg-surface-elevated/80 border border-border'
+            }`}>
+              <Eye className={`w-3 h-3 md:w-3.5 md:h-3.5 ${
+                coverUrl ? 'text-white/80' : 'text-text-secondary'
+              }`} />
+              <span className={`text-[10px] md:text-xs font-medium ${
+                coverUrl ? 'text-white/90' : 'text-text-secondary'
+              }`}>{viewCount} 浏览</span>
             </div>
 
             {/* 选片数 */}
@@ -196,11 +226,19 @@ export function AlbumHero({ album, coverPhoto, from }: AlbumHeroProps) {
             transition={{ delay: 0.3 }}
             className="mb-2 md:mb-4"
           >
-            <h1 className="text-2xl md:text-4xl lg:text-5xl font-serif font-bold text-white mb-1 md:mb-2 leading-tight drop-shadow-lg">
+            <h1 className={`text-2xl md:text-4xl lg:text-5xl font-serif font-bold mb-1 md:mb-2 leading-tight ${
+              coverUrl
+                ? 'text-white drop-shadow-lg'
+                : 'text-text-primary drop-shadow-[0_2px_6px_rgba(0,0,0,0.15)]'
+            }`}>
               {album.title}
             </h1>
             {album.description && (
-              <p className="text-xs md:text-base text-white/80 max-w-2xl line-clamp-2 drop-shadow-md">
+              <p className={`text-xs md:text-base max-w-2xl line-clamp-2 ${
+                coverUrl
+                  ? 'text-white/80 drop-shadow-md'
+                  : 'text-text-secondary drop-shadow-[0_1px_3px_rgba(0,0,0,0.1)]'
+              }`}>
                 {album.description}
               </p>
             )}
@@ -211,11 +249,15 @@ export function AlbumHero({ album, coverPhoto, from }: AlbumHeroProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="flex flex-wrap items-center gap-3 md:gap-5 text-white/80"
+            className={`flex flex-wrap items-center gap-3 md:gap-5 ${
+              coverUrl ? 'text-white/80' : 'text-text-secondary'
+            }`}
           >
             {/* 活动时间（优先显示，如果没有则显示创建时间） */}
             <div className="flex items-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5 md:w-4 md:h-4" />
+              <Calendar className={`w-3.5 h-3.5 md:w-4 md:h-4 ${
+                coverUrl ? 'text-white/80' : 'text-text-secondary'
+              }`} />
               {/* 使用 suppressHydrationWarning 忽略服务端和客户端的时间格式差异 */}
               <span className="text-xs md:text-sm" suppressHydrationWarning>
                 {mounted 
@@ -228,14 +270,18 @@ export function AlbumHero({ album, coverPhoto, from }: AlbumHeroProps) {
             {/* 活动地点 */}
             {location && (
               <div className="flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                <MapPin className={`w-3.5 h-3.5 md:w-4 md:h-4 ${
+                  coverUrl ? 'text-white/80' : 'text-text-secondary'
+                }`} />
                 <span className="text-xs md:text-sm">{location}</span>
               </div>
             )}
 
             {/* 照片数量 */}
             <div className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 md:w-4 md:h-4" />
+              <Clock className={`w-3.5 h-3.5 md:w-4 md:h-4 ${
+                coverUrl ? 'text-white/80' : 'text-text-secondary'
+              }`} />
               <span className="text-xs md:text-sm">{album.photo_count} 张照片</span>
             </div>
           </motion.div>
@@ -247,7 +293,9 @@ export function AlbumHero({ album, coverPhoto, from }: AlbumHeroProps) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1, duration: 0.5 }}
-        className="absolute bottom-4 left-1/2 -translate-x-1/2 hidden md:flex flex-col items-center text-white/60"
+        className={`absolute bottom-4 left-1/2 -translate-x-1/2 hidden md:flex flex-col items-center ${
+          coverUrl ? 'text-white/60' : 'text-text-secondary'
+        }`}
       >
         <span className="text-xs mb-1">向下滚动</span>
         <ChevronDown className="w-5 h-5 animate-bounce" />

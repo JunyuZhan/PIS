@@ -174,8 +174,18 @@ export function WatermarkPreview({ watermarks, width = 400, height = 300 }: Wate
       const position = getPosition(watermark.position, width, height, watermark.margin)
       
       if (watermark.type === 'text' && watermark.text) {
-        // 绘制文字水印
-        const fontSize = watermark.size || Math.max(12, Math.min(48, Math.floor(Math.sqrt(width * height) * 0.015)))
+        // size 是预览图宽度的百分比（1-100），转换为像素
+        // 向后兼容：如果 size > 20，认为是旧的像素值，需要转换为百分比
+        let sizePercent: number;
+        if (watermark.size === undefined) {
+          sizePercent = 2; // 默认值 2%
+        } else if (watermark.size > 20) {
+          // 向后兼容：旧像素值，转换为百分比（基于 1920px 预览图）
+          sizePercent = (watermark.size / 1920) * 100;
+        } else {
+          sizePercent = watermark.size; // 新百分比值
+        }
+        const fontSize = Math.floor(width * (sizePercent / 100));
         ctx.font = `bold ${fontSize}px sans-serif`
         ctx.fillStyle = `rgba(255, 255, 255, ${watermark.opacity || 0.5})`
         ctx.textAlign = position.textAlign as CanvasTextAlign
@@ -190,7 +200,18 @@ export function WatermarkPreview({ watermarks, width = 400, height = 300 }: Wate
       } else if (watermark.type === 'logo' && watermark.logoUrl) {
         // 绘制 Logo 水印
         const logoImg = logoImages.get(watermark.id)
-        const logoSize = watermark.size || Math.floor(Math.min(width, height) * 0.15)
+        // size 是预览图宽度的百分比（1-100），转换为像素
+        // 向后兼容：如果 size > 20，认为是旧的像素值，需要转换为百分比
+        let sizePercent: number;
+        if (watermark.size === undefined) {
+          sizePercent = 8; // 默认值 8%
+        } else if (watermark.size > 20) {
+          // 向后兼容：旧像素值，转换为百分比（基于 1920px 预览图）
+          sizePercent = (watermark.size / 1920) * 100;
+        } else {
+          sizePercent = watermark.size; // 新百分比值
+        }
+        const logoSize = Math.floor(width * (sizePercent / 100));
         
         if (logoImg && logoImg.width > 0 && logoImg.height > 0) {
           // Logo 已成功加载
@@ -253,7 +274,12 @@ export function WatermarkPreview({ watermarks, width = 400, height = 300 }: Wate
         width={width}
         height={height}
         className="w-full h-auto border border-border rounded-lg shadow-sm bg-surface"
-        style={{ maxWidth: '100%', height: 'auto' }}
+        style={{ 
+          maxWidth: '100%', 
+          height: 'auto',
+          // 如果宽度大于容器，按比例缩放显示
+          imageRendering: 'auto'
+        }}
       />
       {watermarks.filter(w => w.enabled !== false).length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center bg-surface/50 rounded-lg">

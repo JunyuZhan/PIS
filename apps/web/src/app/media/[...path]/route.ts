@@ -46,10 +46,29 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
 ) {
+  let path: string | undefined
+  let bucket: string | undefined
+  
   try {
     const resolvedParams = await params
-    const path = resolvedParams.path.join('/')
-    const bucket = process.env.MINIO_BUCKET || 'pis-photos'
+    path = resolvedParams.path.join('/')
+    bucket = process.env.MINIO_BUCKET || 'pis-photos'
+    
+    // 验证 MinIO 配置
+    const accessKey = process.env.MINIO_ACCESS_KEY || ''
+    const secretKey = process.env.MINIO_SECRET_KEY || ''
+    if (!accessKey || !secretKey) {
+      console.error('[Media Proxy] MinIO credentials not configured')
+      return NextResponse.json(
+        { 
+          error: { 
+            code: 'CONFIG_ERROR',
+            message: 'MinIO 配置错误：缺少访问凭证',
+          } 
+        },
+        { status: 500 }
+      )
+    }
     
     // 创建 MinIO 客户端
     const minioClient = createMinioClient()
@@ -113,6 +132,7 @@ export async function GET(
       headers: responseHeaders,
     })
   } catch (error: unknown) {
+    // 处理文件不存在错误
     if (
       error &&
       typeof error === 'object' &&
@@ -121,12 +141,64 @@ export async function GET(
     ) {
       return new NextResponse(null, { status: 404 })
     }
-    console.error('[Media Proxy] Error:', error)
+    
+    // 处理权限错误
+    if (
+      error &&
+      typeof error === 'object' &&
+      ('code' in error || 'statusCode' in error)
+    ) {
+      const errorCode = 'code' in error ? error.code : null
+      const statusCode = 'statusCode' in error ? error.statusCode : null
+      const errorMessage = 'message' in error ? String(error.message) : '未知错误'
+      
+      // AccessDenied, Forbidden, 403 等权限错误
+      if (
+        errorCode === 'AccessDenied' ||
+        errorCode === 'Forbidden' ||
+        statusCode === 403 ||
+        errorMessage.includes('Access Denied') ||
+        errorMessage.includes('Forbidden') ||
+        errorMessage.includes('access denied')
+      ) {
+        console.error('[Media Proxy] Permission Error:', {
+          code: errorCode,
+          statusCode,
+          message: errorMessage,
+          path,
+          bucket,
+        })
+        return NextResponse.json(
+          { 
+            error: { 
+              code: 'ACCESS_DENIED',
+              message: '访问被拒绝，请检查 MinIO 权限配置',
+              details: process.env.NODE_ENV === 'development' ? errorMessage : undefined,
+            } 
+          },
+          { status: 403 }
+        )
+      }
+    }
+    
+    // 记录详细错误信息
+    console.error('[Media Proxy] Error:', {
+      error,
+      path,
+      bucket,
+      errorType: typeof error,
+      errorKeys: error && typeof error === 'object' ? Object.keys(error) : [],
+      errorString: error instanceof Error ? error.stack : String(error),
+    })
+    
     return NextResponse.json(
       { 
         error: { 
           code: 'PROXY_ERROR',
           message: '媒体文件代理失败',
+          details: process.env.NODE_ENV === 'development' 
+            ? (error instanceof Error ? error.message : String(error))
+            : undefined,
         } 
       },
       { status: 500 }

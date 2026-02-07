@@ -205,16 +205,22 @@ export function getSafeMediaUrl(url?: string): string {
       return parsedUrl.pathname || '/media'
     }
     
-    // 客户端：智能处理域名/IP 不匹配
+    // 客户端：智能处理域名/IP 不匹配和协议不匹配
     const currentHost = window.location.hostname
+    const currentProtocol = window.location.protocol
     const configuredHost = parsedUrl.hostname
+    const configuredProtocol = parsedUrl.protocol
     
-    // 核心逻辑：如果配置的主机与当前主机不同，使用相对路径
+    // 核心逻辑：
+    // 1. 如果配置的主机与当前主机不同，使用相对路径
+    // 2. 如果配置的协议是 HTTP 但当前页面是 HTTPS，使用相对路径（避免混合内容警告）
     // 这支持以下场景：
     // - 配置 localhost，通过域名访问
     // - 配置内网 IP，通过域名访问（frpc 反向代理）
     // - 配置域名 A，通过域名 B 访问
-    if (configuredHost !== currentHost) {
+    // - 配置 HTTP，但通过 HTTPS 访问（避免混合内容警告）
+    if (configuredHost !== currentHost || 
+        (configuredProtocol === 'http:' && currentProtocol === 'https:')) {
       return parsedUrl.pathname || '/media'
     }
     

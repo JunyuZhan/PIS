@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, type MouseEvent } from 'react'
 import Image from 'next/image'
 import { 
   Loader2,
@@ -99,29 +99,70 @@ export function SystemSettingsSection() {
     type: 'logo' | 'favicon' | 'wechat_qrcode',
     fieldKey: keyof SettingsFormData
   ) => {
+    // 防止重复上传
+    if (uploading[type]) {
+      console.warn(`[Settings] Upload already in progress for ${type}`)
+      return
+    }
+
     setUploading(prev => ({ ...prev, [type]: true }))
     
     try {
+      console.log(`[Settings] Uploading ${type}:`, file.name, file.size)
+      
       const formData = new FormData()
       formData.append('file', file)
       formData.append('type', type)
       
-      const response = await fetch('/api/admin/settings/upload', {
-        method: 'POST',
-        body: formData,
-      })
-      
-      const data = await response.json()
-      
-      if (!response.ok) {
-        throw new Error(data.error || '上传失败')
+      // 创建带超时的 AbortController
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 60000) // 60秒超时（文件上传需要更长时间）
+
+      try {
+        const response = await fetch('/api/admin/settings/upload', {
+          method: 'POST',
+          body: formData,
+          signal: controller.signal,
+        })
+
+        clearTimeout(timeoutId)
+
+        // 检查响应状态
+        if (!response.ok) {
+          let errorMessage = '上传失败'
+          try {
+            const errorData = await response.json()
+            errorMessage = errorData.error || errorMessage
+            console.error('[Settings] Upload error:', errorData)
+          } catch {
+            errorMessage = `上传失败: ${response.status} ${response.statusText}`
+          }
+          throw new Error(errorMessage)
+        }
+        
+        const data = await response.json()
+        console.log('[Settings] Upload success:', data)
+        
+        if (!data.success && !data.data?.url) {
+          throw new Error(data.error || '上传失败')
+        }
+        
+        // 更新表单数据
+        updateField(fieldKey, data.data.url)
+        showSuccess('上传成功')
+      } catch (fetchError: unknown) {
+        clearTimeout(timeoutId)
+        
+        // 处理 AbortError（超时）
+        if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+          throw new Error('上传超时，请检查网络连接后重试')
+        }
+        
+        throw fetchError
       }
-      
-      // 更新表单数据
-      updateField(fieldKey, data.data.url)
-      showSuccess('上传成功')
     } catch (error) {
-      handleApiError(error, '上传失败')
+      console.error(`[Settings] Upload ${type} failed:`, error)
+      handleApiError(error, `上传${type === 'logo' ? 'Logo' : type === 'favicon' ? 'Favicon' : '微信二维码'}失败`)
     } finally {
       setUploading(prev => ({ ...prev, [type]: false }))
     }
@@ -208,8 +249,23 @@ export function SystemSettingsSection() {
   const hasChanges = JSON.stringify(formData) !== JSON.stringify(initialData)
 
   // 保存设置
-  const handleSave = async () => {
-    if (!hasChanges) return
+  const handleSave = async (e?: MouseEvent<HTMLButtonElement>) => {
+    // 阻止事件冒泡
+    if (e) {
+      e.preventDefault()
+      e.stopPropagation()
+    }
+
+    // 检查是否有更改
+    if (!hasChanges) {
+      showError('没有需要保存的更改')
+      return
+    }
+
+    // 防止重复点击
+    if (saving) {
+      return
+    }
 
     try {
       setSaving(true)
@@ -225,32 +281,75 @@ export function SystemSettingsSection() {
         }
       }
 
-      const response = await fetch('/api/admin/settings', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ settings: updates }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || '保存失败')
+      // 如果没有需要更新的字段，直接返回
+      if (Object.keys(updates).length === 0) {
+        setSaving(false)
+        showError('没有需要保存的更改')
+        return
       }
 
-      showSuccess('设置已保存')
-      setInitialData(formData)
-      
-      // 同步主题设置到 ThemeProvider
-      if ('theme_mode' in updates) {
-        setTheme(formData.theme_mode as 'light' | 'dark' | 'system')
-      }
-      if ('theme_primary_color' in updates) {
-        setPrimaryColor(formData.theme_primary_color)
-      }
-      if ('theme_border_radius' in updates) {
-        setBorderRadius(formData.theme_border_radius as 'none' | 'sm' | 'md' | 'lg' | 'xl' | 'full')
+      console.log('[Settings] Saving updates:', updates)
+
+      // 创建带超时的 AbortController
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 30000) // 30秒超时
+
+      try {
+        const response = await fetch('/api/admin/settings', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ settings: updates }),
+          signal: controller.signal,
+        })
+
+        clearTimeout(timeoutId)
+
+        // 检查响应状态
+        if (!response.ok) {
+          let errorMessage = '保存失败'
+          try {
+            const errorData = await response.json()
+            errorMessage = errorData.error || errorMessage
+            console.error('[Settings] Save error:', errorData)
+          } catch {
+            // 如果响应不是 JSON，使用状态文本
+            errorMessage = `保存失败: ${response.status} ${response.statusText}`
+          }
+          throw new Error(errorMessage)
+        }
+
+        const data = await response.json()
+        console.log('[Settings] Save success:', data)
+
+        if (!data.success) {
+          throw new Error(data.error || '保存失败')
+        }
+
+        showSuccess(data.message || '设置已保存')
+        setInitialData(formData)
+        
+        // 同步主题设置到 ThemeProvider
+        if ('theme_mode' in updates) {
+          setTheme(formData.theme_mode as 'light' | 'dark' | 'system')
+        }
+        if ('theme_primary_color' in updates) {
+          setPrimaryColor(formData.theme_primary_color)
+        }
+        if ('theme_border_radius' in updates) {
+          setBorderRadius(formData.theme_border_radius as 'none' | 'sm' | 'md' | 'lg' | 'xl' | 'full')
+        }
+      } catch (fetchError: unknown) {
+        clearTimeout(timeoutId)
+        
+        // 处理 AbortError（超时）
+        if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+          throw new Error('请求超时，请检查网络连接后重试')
+        }
+        
+        throw fetchError
       }
     } catch (error) {
+      console.error('[Settings] Save failed:', error)
       handleApiError(error, '保存设置失败')
     } finally {
       setSaving(false)
@@ -550,6 +649,7 @@ export function SystemSettingsSection() {
               ].map(option => (
                 <button
                   key={option.value}
+                  type="button"
                   onClick={() => updateField('theme_mode', option.value)}
                   className={cn(
                     'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
@@ -582,12 +682,14 @@ export function SystemSettingsSection() {
                 {['#4F46E5', '#0EA5E9', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'].map(color => (
                   <button
                     key={color}
+                    type="button"
                     onClick={() => updateField('theme_primary_color', color)}
                     className={cn(
                       'w-7 h-7 rounded-full transition-transform hover:scale-110',
                       formData.theme_primary_color === color && 'ring-2 ring-offset-2 ring-accent'
                     )}
                     style={{ backgroundColor: color }}
+                    title={color}
                   />
                 ))}
               </div>
@@ -636,19 +738,26 @@ export function SystemSettingsSection() {
       {/* 保存按钮 */}
       <div className="flex justify-end pt-4 border-t border-border">
         <button
+          type="button"
           onClick={handleSave}
           disabled={saving || !hasChanges}
           className={cn(
-            'btn-primary flex items-center gap-2',
-            (!hasChanges) && 'opacity-50 cursor-not-allowed'
+            'btn-primary flex items-center gap-2 min-w-[120px] justify-center',
+            (!hasChanges || saving) && 'opacity-50 cursor-not-allowed'
           )}
+          title={!hasChanges ? '没有需要保存的更改' : saving ? '正在保存...' : '保存设置'}
         >
           {saving ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>保存中...</span>
+            </>
           ) : (
-            <Save className="w-4 h-4" />
+            <>
+              <Save className="w-4 h-4" />
+              <span>保存设置</span>
+            </>
           )}
-          {saving ? '保存中...' : '保存设置'}
         </button>
       </div>
     </div>

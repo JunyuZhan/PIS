@@ -20,17 +20,18 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     return ApiError.forbidden('需要管理员或修图师权限才能上传精修图')
   }
   
-  // 2. 验证照片存在
+  // 2. 验证照片存在并获取当前 original_key（用于后续清理旧文件）
   const adminClient = await createAdminClient()
   const { data: photoData, error } = await adminClient
     .from('photos')
-    .select('id, album_id, filename')
+    .select('id, album_id, filename, original_key')
     .eq('id', photoId)
     .single()
     
   if (error || !photoData) return ApiError.notFound('照片不存在')
   
-  const photo = photoData as { id: string; album_id: string; filename: string }
+  const photo = photoData as { id: string; album_id: string; filename: string; original_key: string | null }
+  const oldOriginalKey = photo.original_key // 保存旧的原图路径，用于后续清理
   
   // 3. 解析请求体
   let body: unknown
@@ -60,6 +61,32 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }, { id: photoId })
     
   if (updateError) return ApiError.internal(updateError.message)
+  
+  // 5b. 清理旧的原图文件（如果存在且不是精修图路径）
+  // 注意：只删除 raw/ 路径下的原图，保留 retouched/ 路径下的文件（可能是之前的精修图）
+  if (oldOriginalKey && !oldOriginalKey.startsWith('retouched/')) {
+    try {
+      const cleanupUrl = getInternalApiUrl('/api/worker/cleanup-file')
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      }
+      const cookieHeader = request.headers.get('cookie')
+      if (cookieHeader) headers['cookie'] = cookieHeader
+      
+      // 异步清理，不阻塞上传流程
+      fetch(cleanupUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ key: oldOriginalKey }),
+      }).catch((cleanupErr) => {
+        // 清理失败不影响主流程，只记录警告
+        console.warn(`[Retouch Upload] Failed to cleanup old original file ${oldOriginalKey}:`, cleanupErr)
+      })
+    } catch (cleanupErr) {
+      // 清理失败不影响主流程
+      console.warn(`[Retouch Upload] Error cleaning up old original file:`, cleanupErr)
+    }
+  }
   
   // 6. 获取 presigned URL
   try {

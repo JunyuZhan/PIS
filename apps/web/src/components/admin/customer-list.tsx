@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { 
   Users, 
@@ -73,8 +74,10 @@ export function CustomerList() {
   const [showDialog, setShowDialog] = useState(false)
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null)
   const [menuOpen, setMenuOpen] = useState<string | null>(null)
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null)
   const [showNotificationDialog, setShowNotificationDialog] = useState(false)
   const [notifyCustomer, setNotifyCustomer] = useState<Customer | null>(null)
+  const buttonRefs = useRef<Record<string, HTMLButtonElement>>({})
 
   // 获取客户列表
   const { data, isLoading, refetch } = useQuery<CustomersResponse>({
@@ -314,43 +317,28 @@ export function CustomerList() {
                     <td className="px-4 py-3">
                       <div className="relative">
                         <button
-                          onClick={() => setMenuOpen(menuOpen === customer.id ? null : customer.id)}
+                          ref={(el) => {
+                            if (el) buttonRefs.current[customer.id] = el
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            if (menuOpen === customer.id) {
+                              setMenuOpen(null)
+                              setMenuPosition(null)
+                            } else {
+                              const rect = e.currentTarget.getBoundingClientRect()
+                              setMenuPosition({
+                                top: rect.bottom + 8,
+                                left: rect.right - 120, // 菜单宽度约 120px
+                              })
+                              setMenuOpen(customer.id)
+                            }
+                          }}
                           className="p-1.5 rounded hover:bg-surface-elevated transition-colors"
+                          type="button"
                         >
                           <MoreVertical className="w-4 h-4" />
                         </button>
-                        {menuOpen === customer.id && (
-                          <>
-                            <div 
-                              className="fixed inset-0 z-10"
-                              onClick={() => setMenuOpen(null)}
-                            />
-                            <div className="absolute right-0 top-8 z-20 bg-surface-elevated border border-border rounded-lg shadow-lg py-1 min-w-[120px]">
-                              <button
-                                onClick={() => handleEdit(customer)}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-surface transition-colors"
-                              >
-                                <Edit2 className="w-4 h-4" />
-                                编辑
-                              </button>
-                              <button
-                                onClick={() => handleSendNotification(customer)}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-surface transition-colors"
-                                title={customer.email ? '发送邮件通知' : '客户没有邮箱'}
-                              >
-                                <Send className="w-4 h-4" />
-                                发送通知
-                              </button>
-                              <button
-                                onClick={() => handleDelete(customer.id)}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-surface transition-colors"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                                删除
-                              </button>
-                            </div>
-                          </>
-                        )}
                       </div>
                     </td>
                   </tr>
@@ -384,6 +372,75 @@ export function CustomerList() {
             </div>
           )}
         </div>
+      )}
+
+      {/* 菜单弹窗 - 使用 Portal 渲染到 body，避免被表格 overflow 裁剪 */}
+      {menuOpen && menuPosition && typeof window !== 'undefined' && createPortal(
+        <>
+          <div 
+            className="fixed inset-0 z-40"
+            onClick={() => {
+              setMenuOpen(null)
+              setMenuPosition(null)
+            }}
+          />
+          <div 
+            className="fixed z-50 bg-surface-elevated border border-border rounded-lg shadow-xl py-1 min-w-[120px]"
+            style={{
+              top: `${menuPosition.top}px`,
+              left: `${Math.max(8, Math.min(menuPosition.left, window.innerWidth - 128))}px`,
+            }}
+          >
+            {data?.customers.find(c => c.id === menuOpen) && (() => {
+              const customer = data.customers.find(c => c.id === menuOpen)!
+              return (
+                <>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleEdit(customer)
+                      setMenuOpen(null)
+                      setMenuPosition(null)
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-surface transition-colors text-left"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                    编辑
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleSendNotification(customer)
+                      setMenuOpen(null)
+                      setMenuPosition(null)
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-surface transition-colors text-left"
+                    title={customer.email ? '发送邮件通知' : '客户没有邮箱'}
+                  >
+                    <Send className="w-4 h-4" />
+                    发送通知
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDelete(menuOpen)
+                      setMenuOpen(null)
+                      setMenuPosition(null)
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-surface transition-colors text-left"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    删除
+                  </button>
+                </>
+              )
+            })()}
+          </div>
+        </>,
+        document.body
       )}
 
       {/* 客户编辑对话框 */}

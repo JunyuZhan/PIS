@@ -183,13 +183,30 @@ export async function POST(request: NextRequest) {
       return handleError(deleteResult.error, '删除照片记录失败')
     }
 
-    // 4. 更新相册封面（如果封面照片被删除）
+    // 4. 更新相册封面（如果封面照片被删除，自动使用第一张照片作为新封面）
     const albumsToUpdateCover = Array.from(albumsMap.values())
       .filter(album => album.cover_photo_id && validPhotoIds.includes(album.cover_photo_id))
-      .map(album => album.id)
 
     if (albumsToUpdateCover.length > 0) {
-      await adminClient.update('albums', { cover_photo_id: null }, { 'id[]': albumsToUpdateCover })
+      // 为每个相册查找第一张照片并设置为新封面
+      await Promise.all(albumsToUpdateCover.map(async (album) => {
+        // 查找第一张未删除的照片作为新封面
+        const firstPhotoResult = await adminClient
+          .from('photos')
+          .select('id')
+          .eq('album_id', album.id)
+          .eq('status', 'completed')
+          .is('deleted_at', null)
+          .order('captured_at', { ascending: false })
+          .limit(1)
+        
+        // 如果查询成功且有数据，使用第一张照片；否则设置为 null
+        const newCoverPhotoId = firstPhotoResult.data && firstPhotoResult.data.length > 0
+          ? (firstPhotoResult.data[0] as { id: string }).id
+          : null
+        
+        await adminClient.update('albums', { cover_photo_id: newCoverPhotoId }, { id: album.id })
+      }))
     }
 
     // 5. 更新相册照片计数

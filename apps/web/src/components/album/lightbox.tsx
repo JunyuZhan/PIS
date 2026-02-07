@@ -70,24 +70,43 @@ export function PhotoLightbox({
   const preloadImage = useCallback((imageSrc: string) => {
     if (!imageSrc || typeof window === 'undefined') return
     
+    // 确保使用相对路径或 HTTPS，避免混合内容警告
+    let safeSrc = imageSrc
+    // 如果已经是相对路径，直接使用
+    if (imageSrc.startsWith('/')) {
+      safeSrc = imageSrc
+    } else {
+      try {
+        const url = new URL(imageSrc, window.location.origin)
+        // 如果是 HTTP 但当前页面是 HTTPS，转换为相对路径
+        if (url.protocol === 'http:' && window.location.protocol === 'https:') {
+          safeSrc = url.pathname + url.search
+        }
+      } catch {
+        // URL 解析失败，使用原始值
+      }
+    }
+    
     // 检查是否已存在预加载链接或图片已加载
-    if (document.querySelector(`link[href="${imageSrc}"]`) || 
+    if (document.querySelector(`link[href="${safeSrc}"]`) || 
+        document.querySelector(`img[src="${safeSrc}"]`) ||
         document.querySelector(`img[src="${imageSrc}"]`)) return
     
     const link = document.createElement('link')
     link.rel = 'preload'
     link.as = 'image'
-    link.href = imageSrc
+    link.href = safeSrc
     link.setAttribute('fetchpriority', 'high') // Lightbox 相邻图片是高优先级
     document.head.appendChild(link)
     
-    // 设置超时清理：如果 3 秒后图片还没使用，移除预加载链接
+    // 设置超时清理：如果 5 秒后图片还没使用，移除预加载链接
     setTimeout(() => {
-      const linkElement = document.querySelector(`link[href="${imageSrc}"]`)
-      if (linkElement && !document.querySelector(`img[src="${imageSrc}"]`)) {
+      const linkElement = document.querySelector(`link[href="${safeSrc}"]`)
+      if (linkElement && !document.querySelector(`img[src="${safeSrc}"]`) && 
+          !document.querySelector(`img[src="${imageSrc}"]`)) {
         linkElement.remove()
       }
-    }, 3000)
+    }, 5000)
   }, [])
 
   // 同步外部传入的 index 到内部 state，并预加载相邻图片
@@ -241,19 +260,58 @@ export function PhotoLightbox({
   // }, [currentPhoto, loadedOriginals])
 
   // 通过 API 下载原图
-  const handleDownload = useCallback(async () => {
-    if (!currentPhotoId) return
+  const handleDownload = useCallback(async (e?: React.MouseEvent) => {
+    // 阻止事件冒泡
+    if (e) {
+      e.preventDefault()
+      e.stopPropagation()
+    }
+    
+    console.log('[Download] ===== Download button clicked =====')
+    console.log('[Download] Event:', e)
+    console.log('[Download] Current photo ID:', currentPhotoId)
+    
+    if (!currentPhotoId) {
+      console.warn('[Download] No current photo ID')
+      handleApiError(new Error('未选择照片'), '下载失败')
+      return
+    }
+
+    console.log('[Download] Starting download for photo:', currentPhotoId)
 
     try {
       // 获取下载链接
-      const res = await fetch(`/api/public/download/${currentPhotoId}`)
+      const downloadApiUrl = `/api/public/download/${currentPhotoId}`
+      console.log('[Download] Fetching download URL from:', downloadApiUrl)
+      
+      const res = await fetch(downloadApiUrl)
+      console.log('[Download] API response status:', res.status, res.statusText)
+      
       if (!res.ok) {
         const error = await res.json()
-        handleApiError(new Error(error.error?.message || '下载失败'))
+        console.error('[Download] API error:', error)
+        handleApiError(new Error(error.error?.message || '下载失败'), '下载失败')
         return
       }
 
-      const { downloadUrl, filename } = await res.json()
+      const data = await res.json()
+      console.log('[Download] API response data:', data)
+      
+      // API 返回格式: { data: { downloadUrl, filename } }
+      const downloadUrl = data.data?.downloadUrl || data.downloadUrl
+      const filename = data.data?.filename || data.filename
+      
+      console.log('[Download] Extracted downloadUrl:', downloadUrl)
+      console.log('[Download] Extracted filename:', filename)
+
+      // 验证 downloadUrl 是否存在
+      if (!downloadUrl || typeof downloadUrl !== 'string') {
+        console.error('[Download] Invalid downloadUrl:', downloadUrl)
+        throw new Error('下载链接无效')
+      }
+
+      console.log('[Download] Original downloadUrl:', downloadUrl)
+      console.log('[Download] safeMediaUrl:', safeMediaUrl)
 
       // 如果 downloadUrl 是相对路径，转换为完整 URL
       let fullDownloadUrl = downloadUrl
@@ -274,25 +332,39 @@ export function PhotoLightbox({
         }
       }
 
+      console.log('[Download] Full download URL:', fullDownloadUrl)
+      console.log('[Download] Filename:', filename)
+
       // 使用 fetch 获取文件数据，然后用 Blob 创建下载
       // 这样可以确保强制下载而不是预览
+      console.log('[Download] Fetching file from:', fullDownloadUrl)
       const fileRes = await fetch(fullDownloadUrl)
+      console.log('[Download] File response status:', fileRes.status, fileRes.statusText)
+      
       if (!fileRes.ok) {
-        throw new Error('文件下载失败')
+        const errorText = await fileRes.text()
+        console.error('[Download] File fetch error:', errorText)
+        throw new Error(`文件下载失败: ${fileRes.status} ${fileRes.statusText}`)
       }
       
       const blob = await fileRes.blob()
+      console.log('[Download] Blob size:', blob.size, 'bytes')
+      console.log('[Download] Blob type:', blob.type)
+      
       const blobUrl = URL.createObjectURL(blob)
       
       const a = document.createElement('a')
       a.href = blobUrl
-      a.download = filename
+      a.download = filename || 'download'
       document.body.appendChild(a)
+      console.log('[Download] Triggering download...')
       a.click()
       document.body.removeChild(a)
       
       // 释放 Blob URL
       URL.revokeObjectURL(blobUrl)
+      
+      console.log('[Download] Download completed successfully')
       
       // 追踪下载事件
       const currentPhoto = photos[currentIndex]
@@ -304,6 +376,7 @@ export function PhotoLightbox({
         totalSize: blob.size,
       })
     } catch (error) {
+      console.error('[Download] Error occurred:', error)
       handleApiError(error, '下载失败，请重试')
     }
   }, [currentPhotoId, currentIndex, photos, safeMediaUrl])

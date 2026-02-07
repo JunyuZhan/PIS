@@ -23,8 +23,8 @@ export default function BackupPage() {
       </div>
 
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">数据备份</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl font-bold">数据备份</h1>
+        <p className="text-text-muted mt-1">
           备份和恢复系统数据，保护您的重要信息
         </p>
       </div>

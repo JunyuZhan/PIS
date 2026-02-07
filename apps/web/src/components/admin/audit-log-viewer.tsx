@@ -58,8 +58,8 @@ interface AuditLog {
   resource_id: string | null
   resource_name: string | null
   description: string | null
-  changes: Record<string, unknown>
-  metadata: Record<string, unknown>
+  changes: Record<string, unknown> | null
+  metadata: Record<string, unknown> | null
   ip_address: string | null
   user_agent: string | null
   status: string

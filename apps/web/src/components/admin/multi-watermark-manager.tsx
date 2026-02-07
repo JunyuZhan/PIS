@@ -11,7 +11,7 @@ export interface WatermarkItem {
   logoUrl?: string
   opacity: number
   position: string
-  size?: number
+  size?: number // 预览图宽度的百分比（1-100），文本默认2%，Logo默认8%
   margin?: number // 边距（百分比，0-20，默认5）
   enabled?: boolean
 }
@@ -19,6 +19,8 @@ export interface WatermarkItem {
 interface MultiWatermarkManagerProps {
   watermarks: WatermarkItem[]
   onChange: (watermarks: WatermarkItem[]) => void
+  /** 预览图尺寸（可选），如果提供则使用实际尺寸，否则使用默认 1920×1080 */
+  previewDimensions?: { width: number; height: number }
 }
 
 const POSITION_OPTIONS = [
@@ -33,7 +35,15 @@ const POSITION_OPTIONS = [
   { value: 'bottom-right', label: '右下' },
 ]
 
-export function MultiWatermarkManager({ watermarks, onChange }: MultiWatermarkManagerProps) {
+export function MultiWatermarkManager({ 
+  watermarks, 
+  onChange,
+  previewDimensions 
+}: MultiWatermarkManagerProps) {
+  // 计算预览尺寸：优先使用传入的实际预览图尺寸（保持原图比例），否则使用默认值（1920×1080，16:9）
+  // 注意：这里使用的是预览图的比例，预览组件会在 canvas 上按比例绘制，然后 CSS 自动缩放显示
+  const previewWidth = previewDimensions?.width || 1920
+  const previewHeight = previewDimensions?.height || 1080
   const addWatermark = () => {
     if (watermarks.length >= 6) {
       showInfo('最多支持6个水印')
@@ -111,11 +121,21 @@ export function MultiWatermarkManager({ watermarks, onChange }: MultiWatermarkMa
               </label>
               <div className="flex justify-center">
                 <div className="w-full max-w-[280px]">
-                  <WatermarkPreview watermarks={watermarks} width={280} height={210} />
+                  {/* 预览组件使用动态尺寸：优先使用实际预览图尺寸（保持原图比例），否则使用默认 1920×1080 */}
+                  {/* Canvas 内部按预览图比例绘制，CSS 自动缩放显示，保持宽高比 */}
+                  <WatermarkPreview 
+                    watermarks={watermarks} 
+                    width={previewWidth} 
+                    height={previewHeight} 
+                  />
                 </div>
               </div>
               <p className="text-xs text-text-muted mt-2 text-center">
                 蓝色圆点标记水印位置，调整设置可实时查看效果
+                {previewDimensions 
+                  ? `（预览基于 ${previewWidth}×${previewHeight}px 比例，显示时自动缩放）`
+                  : '（预览基于 1920×1080px 比例）'
+                }
               </p>
             </div>
           </div>
@@ -213,17 +233,17 @@ export function MultiWatermarkManager({ watermarks, onChange }: MultiWatermarkMa
                     </span>
                     <input
                       type="range"
-                      min={watermark.type === 'text' ? 12 : 20}
-                      max={watermark.type === 'text' ? 72 : 200}
-                      step={watermark.type === 'text' ? 2 : 5}
-                      value={watermark.size || (watermark.type === 'text' ? 24 : 50)}
+                      min={watermark.type === 'text' ? 1 : 2}
+                      max={watermark.type === 'text' ? 5 : 15}
+                      step={watermark.type === 'text' ? 0.5 : 1}
+                      value={watermark.size || (watermark.type === 'text' ? 2 : 8)}
                       onChange={(e) =>
-                        updateWatermark(watermark.id, { size: parseInt(e.target.value) })
+                        updateWatermark(watermark.id, { size: parseFloat(e.target.value) })
                       }
                       className="w-full h-1.5 accent-accent"
                     />
-                    <span className="text-xs text-text-secondary whitespace-nowrap w-10">
-                      {watermark.size || (watermark.type === 'text' ? 24 : 50)}px
+                    <span className="text-xs text-text-secondary whitespace-nowrap w-12">
+                      {watermark.size || (watermark.type === 'text' ? 2 : 8)}%
                     </span>
                   </div>
                   

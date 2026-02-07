@@ -74,12 +74,13 @@ export async function generateMetadata({ params }: AlbumPageProps): Promise<Meta
         ? album.share_image_url.trim()
         : null)
   
-  // 如果还没有图片，使用封面图
+  // 如果还没有图片，使用封面图（排除已删除的照片）
   if (!shareImage && album.cover_photo_id) {
     const coverPhotoResult = await db
       .from('photos')
       .select('preview_key, thumb_key')
       .eq('id', album.cover_photo_id)
+      .is('deleted_at', null)
       .single()
     
     const coverPhoto = coverPhotoResult.data as { preview_key: string | null; thumb_key: string | null } | null

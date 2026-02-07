@@ -24,9 +24,14 @@ type Album = Database['public']['Tables']['albums']['Row'] & {
 interface AlbumSettingsFormProps {
   album: Album
   coverOriginalKey?: string | null  // 封面照片的原图 key（用于风格预设预览）
+  coverPreviewDimensions?: { width: number; height: number } | null  // 封面照片的预览图尺寸（用于水印预览）
 }
 
-export function AlbumSettingsForm({ album, coverOriginalKey }: AlbumSettingsFormProps) {
+export function AlbumSettingsForm({ 
+  album, 
+  coverOriginalKey,
+  coverPreviewDimensions 
+}: AlbumSettingsFormProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -928,6 +933,7 @@ export function AlbumSettingsForm({ album, coverOriginalKey }: AlbumSettingsForm
             <MultiWatermarkManager
               watermarks={formData.watermark_config.watermarks || []}
               onChange={handleWatermarksChange}
+              previewDimensions={coverPreviewDimensions || undefined}
             />
           </div>
         )}

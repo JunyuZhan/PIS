@@ -75,7 +75,15 @@ export function HomeHero({ featuredAlbum, coverPhoto }: HomeHeroProps) {
           </div>
         </motion.div>
       ) : (
-        <div className="absolute inset-0 bg-gradient-to-br from-surface via-surface-elevated to-background" />
+        <>
+          {/* 亮色模式下的渐变背景 - 增加视觉层次 */}
+          <div className="absolute inset-0 bg-gradient-to-br from-background via-surface-elevated/50 to-surface" />
+          {/* 金色渐变装饰 */}
+          <div className="absolute inset-0 bg-gradient-to-br from-accent/5 via-transparent to-accent/10" />
+          {/* 装饰性几何图形 */}
+          <div className="absolute top-0 right-0 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
+        </>
       )}
 
       {/* 渐变遮罩 - 多层叠加创造深度（仅在有背景图片时显示） */}
@@ -99,7 +107,9 @@ export function HomeHero({ featuredAlbum, coverPhoto }: HomeHeroProps) {
           >
             <Aperture className="w-7 h-7 sm:w-9 sm:h-9 md:w-10 md:h-10 text-accent" />
             <span className={`text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-serif font-bold tracking-wider ${
-              coverUrl ? 'text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]' : 'text-text-primary drop-shadow-[0_2px_4px_rgba(0,0,0,0.1)]'
+              coverUrl 
+                ? 'text-white text-glow-gold' 
+                : 'text-text-primary text-glow-gold-light'
             }`}>
               PIS
             </span>
@@ -112,13 +122,13 @@ export function HomeHero({ featuredAlbum, coverPhoto }: HomeHeroProps) {
             transition={{ duration: prefersReducedMotion ? 0 : 0.7, delay: prefersReducedMotion ? 0 : 0.1, ease: 'easeOut' }}
             className={`text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-serif font-bold leading-tight px-2 ${
               coverUrl 
-                ? 'text-white drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]' 
-                : 'text-text-primary drop-shadow-[0_2px_6px_rgba(0,0,0,0.15)]'
+                ? 'text-white text-glow-gold-lg' 
+                : 'text-text-primary text-glow-gold-light-lg'
             }`}
           >
             {t('title')}
             <br />
-            <span className="text-accent drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">{t('subtitle')}</span>
+            <span className={`text-accent ${coverUrl ? 'text-glow-gold' : 'text-glow-gold-light'}`}>{t('subtitle')}</span>
           </motion.h1>
 
           {/* 副标题 */}
@@ -128,8 +138,8 @@ export function HomeHero({ featuredAlbum, coverPhoto }: HomeHeroProps) {
             transition={{ duration: prefersReducedMotion ? 0 : 0.7, delay: prefersReducedMotion ? 0 : 0.2, ease: 'easeOut' }}
             className={`text-sm sm:text-base md:text-lg lg:text-xl font-light tracking-wide max-w-2xl mx-auto px-2 ${
               coverUrl 
-                ? 'text-white/90 drop-shadow-[0_2px_6px_rgba(0,0,0,0.6)]' 
-                : 'text-text-secondary drop-shadow-[0_1px_3px_rgba(0,0,0,0.1)]'
+                ? 'text-white/90 text-glow-gold-md' 
+                : 'text-text-secondary text-glow-gold-light-md'
             }`}
           >
             {t('tagline')}

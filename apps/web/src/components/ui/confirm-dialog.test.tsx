@@ -126,8 +126,10 @@ describe('ConfirmDialog', () => {
     const confirmButton = screen.getByText('确认')
     await user.click(confirmButton)
 
-    // 按钮应该在加载时禁用
-    expect(confirmButton).toBeDisabled()
+    // 按钮应该在加载时禁用（等待状态更新）
+    await waitFor(() => {
+      expect(confirmButton).toBeDisabled()
+    })
   })
 
   it('应该在确认失败时保持打开状态', async () => {

@@ -145,6 +145,47 @@
     @apply btn bg-red-500 text-white hover:bg-red-600 active:scale-[0.98];
   }
 
+  /* 金色文字发光效果（暗色模式/有背景图片时使用） */
+  .text-glow-gold {
+    text-shadow: 
+      0 2px 8px rgba(212, 175, 55, 0.8),
+      0 0 20px rgba(212, 175, 55, 0.6);
+  }
+
+  .text-glow-gold-lg {
+    text-shadow: 
+      0 4px 12px rgba(212, 175, 55, 0.9),
+      0 0 30px rgba(212, 175, 55, 0.7);
+  }
+
+  .text-glow-gold-md {
+    text-shadow: 
+      0 2px 6px rgba(212, 175, 55, 0.7),
+      0 0 15px rgba(212, 175, 55, 0.5);
+  }
+
+  /* 亮色模式下的金色发光效果（深色文字 + 金色发光） */
+  .light .text-glow-gold-light {
+    text-shadow: 
+      0 2px 8px rgba(212, 175, 55, 0.6),
+      0 0 20px rgba(212, 175, 55, 0.4),
+      0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+
+  .light .text-glow-gold-light-lg {
+    text-shadow: 
+      0 4px 12px rgba(212, 175, 55, 0.7),
+      0 0 30px rgba(212, 175, 55, 0.5),
+      0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .light .text-glow-gold-light-md {
+    text-shadow: 
+      0 2px 6px rgba(212, 175, 55, 0.6),
+      0 0 15px rgba(212, 175, 55, 0.4),
+      0 1px 2px rgba(0, 0, 0, 0.05);
+  }
+
   /* 输入框 */
   .input {
     @apply w-full px-4 py-2 bg-surface-elevated border border-border

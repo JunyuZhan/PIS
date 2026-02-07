@@ -24,7 +24,7 @@ export default function PermissionsPage() {
 
       <div>
         <h1 className="text-2xl font-bold">权限管理</h1>
-        <p className="text-muted-foreground">
+        <p className="text-text-muted mt-1">
           配置角色权限，控制不同用户的操作范围
         </p>
       </div>

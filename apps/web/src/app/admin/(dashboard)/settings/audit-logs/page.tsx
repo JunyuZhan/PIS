@@ -24,7 +24,7 @@ export default function AuditLogsPage() {
 
       <div>
         <h1 className="text-2xl font-bold">操作日志</h1>
-        <p className="text-muted-foreground">
+        <p className="text-text-muted mt-1">
           查看系统操作日志，追踪用户行为和变更记录
         </p>
       </div>

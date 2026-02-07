@@ -67,9 +67,23 @@ export function MasonryGrid({
         if (!photo?.thumb_key) continue
         
         // 只使用 updated_at 作为时间戳，避免 Date.now() 导致的 hydration mismatch
-        const imageSrc = photo.updated_at 
+        let imageSrc = photo.updated_at 
           ? `${mediaUrl.replace(/\/$/, '')}/${photo.thumb_key.replace(/^\//, '')}?t=${new Date(photo.updated_at).getTime()}`
           : `${mediaUrl.replace(/\/$/, '')}/${photo.thumb_key.replace(/^\//, '')}`
+        
+        // 确保使用相对路径或 HTTPS，避免混合内容警告
+        // 如果已经是相对路径，直接使用
+        if (!imageSrc.startsWith('/')) {
+          try {
+            const url = new URL(imageSrc, window.location.origin)
+            // 如果是 HTTP 但当前页面是 HTTPS，转换为相对路径
+            if (url.protocol === 'http:' && window.location.protocol === 'https:') {
+              imageSrc = url.pathname + url.search
+            }
+          } catch {
+            // URL 解析失败，使用原始值
+          }
+        }
         
         // 检查是否已存在预加载链接或图片已加载
         if (document.querySelector(`link[href="${imageSrc}"]`) || 
@@ -84,13 +98,13 @@ export function MasonryGrid({
         link.setAttribute('fetchpriority', i === 0 ? 'high' : 'low')
         document.head.appendChild(link)
         
-        // 设置超时清理：如果 5 秒后图片还没使用，移除预加载链接
+        // 设置超时清理：如果 8 秒后图片还没使用，移除预加载链接（增加时间窗口）
         setTimeout(() => {
           const linkElement = document.querySelector(`link[href="${imageSrc}"]`)
           if (linkElement && !document.querySelector(`img[src="${imageSrc}"]`)) {
             linkElement.remove()
           }
-        }, 5000)
+        }, 8000) // 增加到 8 秒，给图片更多时间加载
       }
     }, 100) // 延迟 100ms，确保页面已渲染
   }, [photos])

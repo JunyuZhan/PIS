@@ -159,6 +159,16 @@ const watermarkItemSchema = z
       .min(0, "透明度必须在 0-1 之间")
       .max(1, "透明度必须在 0-1 之间")
       .optional(),
+    size: z
+      .number()
+      .min(0.1, "水印大小必须大于 0.1%")
+      .max(100, "水印大小不能超过 100%")
+      .optional(),
+    margin: z
+      .number()
+      .min(0, "边距不能小于 0%")
+      .max(20, "边距不能超过 20%")
+      .optional(),
   })
   .superRefine((data, ctx) => {
     if (data.type === "text") {

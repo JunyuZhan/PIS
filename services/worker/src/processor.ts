@@ -62,7 +62,7 @@ export interface SingleWatermark {
   opacity: number
   /** 位置 */
   position: 'top-left' | 'top-center' | 'top-right' | 'center-left' | 'center' | 'center-right' | 'bottom-left' | 'bottom-center' | 'bottom-right'
-  /** 字体大小或 Logo 尺寸（可选，自动计算） */
+  /** 字体大小或 Logo 尺寸（预览图宽度的百分比，1-100，可选，自动计算） */
   size?: number
   /** 边距（百分比，0-20，默认 5） */
   margin?: number
@@ -557,9 +557,20 @@ export class PhotoProcessor {
     imageHeight: number
   ): Promise<Buffer | null> {
     if (watermark.type === 'text' && watermark.text) {
-      // Optimization: Calculate font size based on area rather than min dimension
-      const baseSize = Math.sqrt(imageWidth * imageHeight);
-      const fontSize = watermark.size || Math.max(12, Math.min(72, Math.floor(baseSize * 0.01)));
+      // size 是预览图宽度的百分比（1-100），转换为像素
+      // 向后兼容：如果 size > 20，认为是旧的像素值，需要转换为百分比
+      // 假设预览图宽度为 1920px，将像素值转换为百分比：pixels / 1920 * 100
+      let sizePercent: number;
+      if (watermark.size === undefined) {
+        sizePercent = 2; // 默认值 2%
+      } else if (watermark.size > 20) {
+        // 向后兼容：旧像素值，转换为百分比（基于 1920px 预览图）
+        const maxPreviewSize = parseInt(process.env.PREVIEW_MAX_SIZE || '1920', 10);
+        sizePercent = (watermark.size / maxPreviewSize) * 100;
+      } else {
+        sizePercent = watermark.size; // 新百分比值
+      }
+      const fontSize = Math.floor(imageWidth * (sizePercent / 100));
       const { x, y, anchor, baseline } = this.getTextPosition(watermark.position, imageWidth, imageHeight, watermark.margin);
 
       const svgText = `
@@ -612,7 +623,20 @@ export class PhotoProcessor {
             throw new Error(`Logo file too large: ${logoBuffer.byteLength} bytes (max: ${maxSize} bytes)`);
           }
 
-          const logoSize = watermark.size || Math.floor(Math.min(imageWidth, imageHeight) * 0.15);
+          // size 是预览图宽度的百分比（1-100），转换为像素
+          // 向后兼容：如果 size > 20，认为是旧的像素值，需要转换为百分比
+          // 假设预览图宽度为 1920px，将像素值转换为百分比：pixels / 1920 * 100
+          let sizePercent: number;
+          if (watermark.size === undefined) {
+            sizePercent = 8; // 默认值 8%
+          } else if (watermark.size > 20) {
+            // 向后兼容：旧像素值，转换为百分比（基于 1920px 预览图）
+            const maxPreviewSize = parseInt(process.env.PREVIEW_MAX_SIZE || '1920', 10);
+            sizePercent = (watermark.size / maxPreviewSize) * 100;
+          } else {
+            sizePercent = watermark.size; // 新百分比值
+          }
+          const logoSize = Math.floor(imageWidth * (sizePercent / 100));
 
           // Optimization: Get buffer and metadata in one go, avoid repeated Sharp instances
           const resizedLogoResult = await sharp(Buffer.from(logoBuffer))

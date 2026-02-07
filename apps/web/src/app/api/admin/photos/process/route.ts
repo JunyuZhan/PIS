@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAdmin } from '@/lib/auth/role-helpers'
+import { requireAdmin, requireRetoucherOrAdmin } from '@/lib/auth/role-helpers'
 import { processPhotoSchema } from '@/lib/validation/schemas'
 import { safeValidate, handleError, createSuccessResponse, ApiError } from '@/lib/validation/error-handler'
 import { getInternalApiUrl } from '@/lib/utils'
@@ -10,12 +10,13 @@ import { getInternalApiUrl } from '@/lib/utils'
  * @route POST /api/admin/photos/process
  * @description 触发 Worker 服务处理照片（生成缩略图、预览图等）
  * 
- * @auth 需要管理员登录
+ * @auth 需要管理员或修图师登录
  * 
  * @body {Object} requestBody - 照片处理请求体
  * @body {string} requestBody.photoId - 照片ID（UUID格式，必填）
  * @body {string} requestBody.albumId - 相册ID（UUID格式，必填）
  * @body {string} requestBody.originalKey - 原始文件在存储中的键名（必填）
+ * @body {boolean} [requestBody.isRetouch] - 是否为精修图上传（可选）
  * 
  * @returns {Object} 200 - 处理请求已提交
  * @returns {boolean} 200.data.success - 操作是否成功
@@ -30,6 +31,7 @@ import { getInternalApiUrl } from '@/lib/utils'
  * @returns {Object} 500 - 服务器内部错误
  * 
  * @note 如果 Worker 服务不可用，会返回 202 状态码，照片将在后台异步处理
+ * @note 如果是精修图上传（isRetouch=true），允许修图师权限；否则需要管理员权限
  */
 export async function POST(request: NextRequest) {
   try {
@@ -40,13 +42,7 @@ export async function POST(request: NextRequest) {
       return ApiError.unauthorized('需要登录才能执行此操作')
     }
 
-    // 再检查用户是否为管理员
-    const admin = await requireAdmin(request)
-    if (!admin) {
-      return ApiError.forbidden('需要管理员权限才能处理照片')
-    }
-
-    // 解析和验证请求体
+    // 解析请求体以判断是否为精修图上传
     let body: unknown
     try {
       body = await request.json()
@@ -61,6 +57,19 @@ export async function POST(request: NextRequest) {
     }
 
     const { photoId, albumId, originalKey, isRetouch } = validation.data
+
+    // 如果是精修图上传，允许修图师或管理员；否则只允许管理员
+    if (isRetouch) {
+      const retoucherOrAdmin = await requireRetoucherOrAdmin(request)
+      if (!retoucherOrAdmin) {
+        return ApiError.forbidden('需要修图师或管理员权限才能处理精修图')
+      }
+    } else {
+      const admin = await requireAdmin(request)
+      if (!admin) {
+        return ApiError.forbidden('需要管理员权限才能处理照片')
+      }
+    }
 
     // 使用代理路由调用 Worker API 触发处理
     // 代理路由会自动处理 Worker URL 配置和认证
