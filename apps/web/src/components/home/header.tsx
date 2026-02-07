@@ -25,9 +25,9 @@ export function HomeHeader() {
           <Image
             src={logoUrl}
             alt="PIS Logo"
-            width={40}
-            height={40}
-            className="w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 flex-shrink-0 transition-transform group-hover:scale-110"
+            width={56}
+            height={56}
+            className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 flex-shrink-0 transition-transform group-hover:scale-110"
             unoptimized
           />
           {/* 品牌名称和说明 */}
