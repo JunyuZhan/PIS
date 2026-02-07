@@ -305,10 +305,84 @@
   },
   "footer": {
     "poweredBy": "Powered by",
+    "poweredBySuffix": "",
     "copyright": "© 2026 junyuzhan. All rights reserved.",
     "privacyPolicy": "Privacy Policy",
     "termsOfService": "Terms of Service",
     "thankYou": "Thank you for choosing our photography service",
     "description": "Private Instant photo Sharing system"
+  },
+  "legal": {
+    "backToHome": "Back to Home",
+    "lastUpdated": "Last Updated",
+    "privacyPolicy": {
+      "title": "Privacy Policy",
+      "intro": "We take your privacy very seriously. This Privacy Policy explains how we collect, use, store, and protect your personal information. By using this service, you agree to the practices described in this Privacy Policy.",
+      "collection": {
+        "title": "Information Collection",
+        "desc": "To provide better services, we may collect the following types of information:",
+        "item1": "Access logs: including IP address, browser type, access time, etc.",
+        "item2": "Device information: including device model, operating system version, etc.",
+        "item3": "Photo metadata: EXIF information when uploading photos (such as capture time, camera model, etc.)"
+      },
+      "usage": {
+        "title": "Information Usage",
+        "desc": "The information we collect will be used for the following purposes:",
+        "item1": "Provide, maintain, and improve our services",
+        "item2": "Analyze service usage to optimize user experience",
+        "item3": "Ensure the security and stability of the service"
+      },
+      "protection": {
+        "title": "Information Protection",
+        "desc": "We take appropriate technical and organizational measures to protect your personal information from unauthorized access, use, or disclosure. All data transmission uses HTTPS encryption, and sensitive information is encrypted during storage."
+      },
+      "cookies": {
+        "title": "Cookie Usage",
+        "desc": "We use cookies to maintain user sessions and remember your preferences. You can manage or disable cookies through your browser settings, but this may affect the proper functioning of some features."
+      },
+      "thirdParty": {
+        "title": "Third-Party Services",
+        "desc": "This service is self-hosted and does not share your data with third parties. All data is stored on your own servers and is completely under your control."
+      },
+      "contact": {
+        "title": "Contact Us",
+        "desc": "If you have any questions or suggestions about this Privacy Policy, please contact us through the contact information provided in the footer."
+      }
+    },
+    "termsOfService": {
+      "title": "Terms of Service",
+      "intro": "Welcome to our photography sharing service. Please read the following terms carefully before using this service. By continuing to use this service, you agree to comply with these terms.",
+      "service": {
+        "title": "Service Description",
+        "desc": "This service is a self-hosted photography sharing and management platform designed to help photographers share and manage their photo works safely and conveniently."
+      },
+      "userResponsibility": {
+        "title": "User Responsibilities",
+        "desc": "When using this service, you agree to:",
+        "item1": "Comply with all applicable laws and regulations",
+        "item2": "Not upload or share any illegal, harmful, or content that infringes on the rights of others",
+        "item3": "Protect your account information and be responsible for all activities under your account"
+      },
+      "intellectualProperty": {
+        "title": "Intellectual Property",
+        "desc": "The copyright of all photos you upload belongs to you. This service does not claim any ownership of your content. We only obtain the limited license necessary to provide the service."
+      },
+      "photoUsage": {
+        "title": "Photo Usage",
+        "desc": "Photos shared through this service are only for viewing and downloading (if download is enabled) by authorized users. No one may use the photos for commercial purposes or redistribute them without the explicit permission of the photographer."
+      },
+      "disclaimer": {
+        "title": "Disclaimer",
+        "desc": "This service is provided \"as is\" without any express or implied warranties. We are not responsible for service interruptions, data loss, or any indirect damages. It is recommended that you regularly back up important data."
+      },
+      "modifications": {
+        "title": "Terms Modifications",
+        "desc": "We reserve the right to modify these terms at any time. Modified terms will take effect immediately upon posting on this page. Continued use of this service indicates your acceptance of the modified terms."
+      },
+      "contact": {
+        "title": "Contact Us",
+        "desc": "If you have any questions about these Terms of Service, please contact us through the contact information provided in the footer."
+      }
+    }
   }
 }

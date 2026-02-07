@@ -152,13 +152,13 @@ export function SiteFooter() {
               <span>© {currentYear} {copyrightText || photographerName}</span>
               <span className="hidden md:inline text-border">|</span>
               <div className="flex items-center gap-1.5 md:gap-2">
-                <span className="hover:text-accent transition-colors cursor-pointer text-xs">
+                <Link href="/privacy" className="hover:text-accent transition-colors text-xs">
                   {t('privacyPolicy')}
-                </span>
+                </Link>
                 <span className="text-border">·</span>
-                <span className="hover:text-accent transition-colors cursor-pointer text-xs">
+                <Link href="/terms" className="hover:text-accent transition-colors text-xs">
                   {t('termsOfService')}
-                </span>
+                </Link>
               </div>
             </div>
 
@@ -173,6 +173,7 @@ export function SiteFooter() {
               >
                 PIS
               </Link>
+              {t('poweredBySuffix') && <span>{t('poweredBySuffix')}</span>}
             </div>
           </div>
 

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { Camera, Heart, Mail, Phone, MessageCircle, Instagram, X } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useSettings } from '@/hooks/use-settings'
@@ -163,8 +164,8 @@ export function AlbumFooter() {
             <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 md:gap-4">
               <span>© {currentYear} {copyrightText || photographerName}. All rights reserved.</span>
               <span className="hidden md:inline text-border">|</span>
-              <a href="#" className="hover:text-accent transition-colors">{t('privacyPolicy')}</a>
-              <a href="#" className="hover:text-accent transition-colors">{t('termsOfService')}</a>
+              <Link href="/privacy" className="hover:text-accent transition-colors">{t('privacyPolicy')}</Link>
+              <Link href="/terms" className="hover:text-accent transition-colors">{t('termsOfService')}</Link>
             </div>
 
             <div className="flex items-center gap-1">
@@ -177,6 +178,7 @@ export function AlbumFooter() {
               >
                 PIS
               </a>
+              {t('poweredBySuffix') && <span>{t('poweredBySuffix')}</span>}
             </div>
           </div>
 
