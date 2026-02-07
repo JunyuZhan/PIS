@@ -27,6 +27,15 @@ const deleteTranslationSchema = z.object({
   id: z.string().uuid(),
 })
 
+interface CustomTranslationData {
+  id: string
+  locale: string
+  namespace: string
+  key: string
+  value: string
+  is_active: boolean
+}
+
 // 获取默认翻译（从 messages 文件）
 async function getDefaultTranslations(locale: string): Promise<Record<string, unknown>> {
   try {
@@ -76,7 +85,7 @@ function parseKey(flatKey: string): { namespace: string; key: string } {
  */
 export async function GET(request: NextRequest) {
   try {
-    await requireAdmin()
+    await requireAdmin(request)
     const db = createServerSupabaseClient()
 
     const { searchParams } = new URL(request.url)
@@ -146,37 +155,36 @@ export async function GET(request: NextRequest) {
     }
 
     // 覆盖/添加自定义翻译
-    if (customTranslations) {
-      for (const custom of customTranslations) {
-        const flatKey = `${custom.namespace}.${custom.key}`
-        const existing = translationsMap.get(flatKey)
-        
-        if (existing) {
-          existing.id = custom.id
-          existing.customValue = custom.value
-          existing.isCustom = true
-          existing.isActive = custom.is_active
-        } else {
-          // 如果有搜索词，过滤
-          if (search) {
-            const searchLower = search.toLowerCase()
-            if (!flatKey.toLowerCase().includes(searchLower) && 
-                !custom.value.toLowerCase().includes(searchLower)) {
-              continue
-            }
+    const customArray = (customTranslations || []) as CustomTranslationData[]
+    for (const custom of customArray) {
+      const flatKey = `${custom.namespace}.${custom.key}`
+      const existing = translationsMap.get(flatKey)
+      
+      if (existing) {
+        existing.id = custom.id
+        existing.customValue = custom.value
+        existing.isCustom = true
+        existing.isActive = custom.is_active
+      } else {
+        // 如果有搜索词，过滤
+        if (search) {
+          const searchLower = search.toLowerCase()
+          if (!flatKey.toLowerCase().includes(searchLower) && 
+              !custom.value.toLowerCase().includes(searchLower)) {
+            continue
           }
-
-          translationsMap.set(flatKey, {
-            id: custom.id,
-            locale,
-            namespace: custom.namespace,
-            key: custom.key,
-            defaultValue: '',
-            customValue: custom.value,
-            isCustom: true,
-            isActive: custom.is_active,
-          })
         }
+
+        translationsMap.set(flatKey, {
+          id: custom.id,
+          locale,
+          namespace: custom.namespace,
+          key: custom.key,
+          defaultValue: '',
+          customValue: custom.value,
+          isCustom: true,
+          isActive: custom.is_active,
+        })
       }
     }
 
@@ -206,7 +214,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    await requireAdmin()
+    await requireAdmin(request)
     const db = createServerSupabaseClient()
 
     const body = await request.json()
@@ -224,28 +232,28 @@ export async function POST(request: NextRequest) {
     const { locale, namespace, key, value, is_active } = validation.data
 
     // 使用 upsert 添加或更新
-    const { data, error } = await db
-      .from('custom_translations')
-      .upsert(
-        {
-          locale,
-          namespace,
-          key,
-          value,
-          is_active,
-          updated_at: new Date().toISOString(),
-        },
-        {
-          onConflict: 'locale,namespace,key',
-        }
-      )
-      .select()
-      .single()
+    const { error } = await db.upsert('custom_translations', {
+      locale,
+      namespace,
+      key,
+      value,
+      is_active,
+      updated_at: new Date().toISOString(),
+    }, 'locale,namespace,key')
 
     if (error) {
       console.error('Upsert error:', error)
       throw new ApiError('保存翻译失败', 500, 'DATABASE_ERROR')
     }
+
+    // 查询更新后的数据
+    const { data } = await db
+      .from('custom_translations')
+      .select('*')
+      .eq('locale', locale)
+      .eq('namespace', namespace)
+      .eq('key', key)
+      .single()
 
     return NextResponse.json({
       success: true,
@@ -263,7 +271,7 @@ export async function POST(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
   try {
-    await requireAdmin()
+    await requireAdmin(request)
     const db = createServerSupabaseClient()
 
     const body = await request.json()

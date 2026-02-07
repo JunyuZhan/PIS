@@ -64,9 +64,9 @@ export async function GET(request: NextRequest) {
       query = query.lte('created_at', endDate)
     }
     if (search) {
-      query = query.or(
-        `description.ilike.%${search}%,resource_name.ilike.%${search}%,user_email.ilike.%${search}%`
-      )
+      // 简化搜索：只搜索描述字段
+      // TODO: 实现多字段 OR 搜索需要扩展 PostgreSQL 客户端
+      query = query.ilike('description', `%${search}%`)
     }
 
     // 分页

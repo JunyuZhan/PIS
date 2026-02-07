@@ -4,6 +4,25 @@ import { createAdminClient } from '@/lib/database'
 import { ApiError } from '@/lib/validation/error-handler'
 import { z } from 'zod'
 
+interface Customer {
+  id: string
+  name: string
+  email: string | null
+  phone: string | null
+}
+
+interface Album {
+  id: string
+  title: string
+  slug: string
+  description: string | null
+}
+
+interface SystemSettings {
+  key: string
+  value: string
+}
+
 // 请求验证
 const sendNotificationSchema = z.object({
   customer_id: z.string().uuid(),
@@ -39,11 +58,12 @@ export async function POST(request: NextRequest) {
     const db = await createAdminClient()
 
     // 获取客户信息
-    const { data: customer, error: customerError } = await db
+    const { data: customerData, error: customerError } = await db
       .from('customers')
       .select('id, name, email, phone')
       .eq('id', customer_id)
       .single()
+    const customer = customerData as Customer | null
 
     if (customerError || !customer) {
       return NextResponse.json(
@@ -61,11 +81,12 @@ export async function POST(request: NextRequest) {
     }
 
     // 获取相册信息
-    const { data: album, error: albumError } = await db
+    const { data: albumData, error: albumError } = await db
       .from('albums')
       .select('id, title, slug, description')
       .eq('id', album_id)
       .single()
+    const album = albumData as Album | null
 
     if (albumError || !album) {
       return NextResponse.json(
@@ -75,12 +96,13 @@ export async function POST(request: NextRequest) {
     }
 
     // 获取站点设置
-    const { data: settings } = await db
+    const { data: settingsData } = await db
       .from('system_settings')
       .select('key, value')
       .in('key', ['brand_name', 'site_title'])
+    const settings = (settingsData || []) as SystemSettings[]
 
-    const brandName = settings?.find(s => s.key === 'brand_name')?.value || 'PIS Photography'
+    const brandName = settings.find(s => s.key === 'brand_name')?.value || 'PIS Photography'
     
     // 构建相册链接
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
@@ -99,7 +121,7 @@ export async function POST(request: NextRequest) {
     })
 
     // 记录通知（状态为 pending）
-    const { data: notification, error: insertError } = await db.insert('notifications', {
+    const { data: notificationData, error: insertError } = await db.insert('notifications', {
       customer_id,
       album_id,
       type,
@@ -115,6 +137,7 @@ export async function POST(request: NextRequest) {
         album_url: albumUrl,
       },
     })
+    const notification = notificationData as { id: string }[] | null
 
     if (insertError) {
       console.error('创建通知记录失败:', insertError)
@@ -126,7 +149,7 @@ export async function POST(request: NextRequest) {
     // 尝试发送邮件
     try {
       const sendResult = await sendEmail({
-        to: customer.email,
+        to: customer.email!,
         subject: emailSubject,
         html: emailContent,
       })

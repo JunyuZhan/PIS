@@ -1,8 +1,31 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AlbumSettingsForm } from './album-settings-form'
 import type { Database } from '@/types/database'
+
+// 创建测试用的 QueryClient wrapper
+const createTestQueryClient = () => new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+    },
+  },
+})
+
+const TestWrapper = ({ children }: { children: React.ReactNode }) => {
+  const queryClient = createTestQueryClient()
+  return (
+    <QueryClientProvider client={queryClient}>
+      {children}
+    </QueryClientProvider>
+  )
+}
+
+const renderWithProviders = (ui: React.ReactElement) => {
+  return render(ui, { wrapper: TestWrapper })
+}
 
 // Mock router
 vi.mock('next/navigation', () => ({
@@ -96,7 +119,7 @@ describe('AlbumSettingsForm', () => {
   })
 
   it('应该渲染相册设置表单', () => {
-    render(<AlbumSettingsForm album={mockAlbum} />)
+    renderWithProviders(<AlbumSettingsForm album={mockAlbum} />)
     
     // 表单应该包含标题输入框（使用 placeholder 或其他方式查找）
     const titleInput = screen.queryByPlaceholderText(/标题|相册标题/i) || 
@@ -106,7 +129,7 @@ describe('AlbumSettingsForm', () => {
   })
 
   it('应该显示相册标题输入框', () => {
-    render(<AlbumSettingsForm album={mockAlbum} />)
+    renderWithProviders(<AlbumSettingsForm album={mockAlbum} />)
     
     const titleInput = screen.queryByPlaceholderText(/标题|相册标题/i) || 
                       screen.queryByDisplayValue(mockAlbum.title) ||
@@ -119,7 +142,7 @@ describe('AlbumSettingsForm', () => {
 
   it('应该支持编辑标题', async () => {
     const user = userEvent.setup()
-    render(<AlbumSettingsForm album={mockAlbum} />)
+    renderWithProviders(<AlbumSettingsForm album={mockAlbum} />)
     
     const titleInput = screen.queryByPlaceholderText(/标题|相册标题/i) || 
                       screen.queryByDisplayValue(mockAlbum.title) ||
@@ -135,7 +158,7 @@ describe('AlbumSettingsForm', () => {
   })
 
   it('应该显示密码输入框', () => {
-    render(<AlbumSettingsForm album={mockAlbum} />)
+    renderWithProviders(<AlbumSettingsForm album={mockAlbum} />)
     
     const passwordInput = screen.queryByPlaceholderText(/密码/i) || 
                          screen.queryByLabelText(/密码/i) ||
@@ -145,7 +168,7 @@ describe('AlbumSettingsForm', () => {
 
   it('应该支持切换密码显示', async () => {
     const user = userEvent.setup()
-    render(<AlbumSettingsForm album={mockAlbum} />)
+    renderWithProviders(<AlbumSettingsForm album={mockAlbum} />)
     
     const passwordInput = screen.queryByPlaceholderText(/密码/i) || 
                          screen.queryByLabelText(/密码/i) ||
@@ -169,13 +192,13 @@ describe('AlbumSettingsForm', () => {
   it('应该显示水印管理器', () => {
     // 水印管理器只在 watermark_enabled 为 true 时显示
     const albumWithWatermark = createMockAlbum({ watermark_enabled: true })
-    render(<AlbumSettingsForm album={albumWithWatermark} />)
+    renderWithProviders(<AlbumSettingsForm album={albumWithWatermark} />)
     
     expect(screen.getByTestId('watermark-manager')).toBeInTheDocument()
   })
 
   it('应该显示风格预设选择器', () => {
-    render(<AlbumSettingsForm album={mockAlbum} />)
+    renderWithProviders(<AlbumSettingsForm album={mockAlbum} />)
     
     expect(screen.getByTestId('style-preset-selector')).toBeInTheDocument()
   })
@@ -189,7 +212,7 @@ describe('AlbumSettingsForm', () => {
 
     const { showSuccess } = await import('@/lib/toast')
     
-    render(<AlbumSettingsForm album={mockAlbum} />)
+    renderWithProviders(<AlbumSettingsForm album={mockAlbum} />)
     
     // 查找保存按钮（可能是提交按钮或带"保存"文本的按钮）
     const saveButton = screen.getByRole('button', { name: /保存/i }) || 
@@ -207,14 +230,14 @@ describe('AlbumSettingsForm', () => {
   })
 
   it('应该显示存储检查器', () => {
-    render(<AlbumSettingsForm album={mockAlbum} />)
+    renderWithProviders(<AlbumSettingsForm album={mockAlbum} />)
     
     expect(screen.getByTestId('storage-checker')).toBeInTheDocument()
   })
 
   it('应该支持设置过期时间', async () => {
     const user = userEvent.setup()
-    render(<AlbumSettingsForm album={mockAlbum} />)
+    renderWithProviders(<AlbumSettingsForm album={mockAlbum} />)
     
     // 查找过期时间输入框（可能是 date 类型的 input）
     const expiresInput = screen.queryByLabelText(/过期时间/i) || 
@@ -240,7 +263,7 @@ describe('AlbumSettingsForm', () => {
       json: async () => ({ error: { message: '保存失败' } }),
     })
 
-    render(<AlbumSettingsForm album={mockAlbum} />)
+    renderWithProviders(<AlbumSettingsForm album={mockAlbum} />)
     
     const saveButton = screen.getByRole('button', { name: /保存/i })
     await user.click(saveButton)

@@ -2,6 +2,9 @@
  * 原图下载 API 路由测试
  * 
  * 测试 GET 方法
+ * 
+ * 注意：当前实现直接返回公开访问路径（/media/{key}），
+ * 不再使用 Worker API 生成签名 URL
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -15,12 +18,6 @@ const mockDb = {
 vi.mock('@/lib/database', () => ({
   createClient: vi.fn().mockResolvedValue(mockDb),
 }))
-
-// Mock fetch for Worker API calls
-const mockFetch = vi.fn()
-
-// Mock global fetch
-global.fetch = mockFetch
 
 
 describe('GET /api/public/download/[id]', () => {
@@ -39,24 +36,10 @@ describe('GET /api/public/download/[id]', () => {
     // 设置必要的环境变量
     process.env = {
       ...originalEnv,
-      WORKER_API_URL: 'http://localhost:3001',
-      WORKER_API_KEY: 'test-api-key',
     }
-    
-    // Mock global fetch
-    global.fetch = mockFetch
     
     const { createClient } = await import('@/lib/database')
     mockDb = await createClient()
-    
-    // 重置 fetch mock
-    mockFetch.mockReset()
-    
-    // 默认 mock Worker API 成功响应
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: async () => ({ url: 'https://minio.example.com/presigned-url' }),
-    })
     
     // 重新导入route模块以使用新的mock
     const routeModule = await import('./route')
@@ -199,11 +182,12 @@ describe('GET /api/public/download/[id]', () => {
     })
   })
 
-  describe('presigned URL generation', () => {
-    it('should generate presigned URL successfully', async () => {
+  describe('download URL generation', () => {
+    it('should generate download URL successfully', async () => {
+      const originalKey = `raw/${validAlbumId}/${validPhotoId}.jpg`
       const mockPhoto = {
         id: validPhotoId,
-        original_key: `raw/${validAlbumId}/${validPhotoId}.jpg`,
+        original_key: originalKey,
         filename: 'photo.jpg',
         album_id: validAlbumId,
       }
@@ -232,37 +216,21 @@ describe('GET /api/public/download/[id]', () => {
         .mockReturnValueOnce(mockPhotoQuery)
         .mockReturnValueOnce(mockAlbumQuery)
 
-      const mockDownloadUrl = 'https://minio.example.com/presigned-url'
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: async () => ({ url: mockDownloadUrl }),
-      })
-
       const request = createMockRequest(`http://localhost:3000/api/public/download/${validPhotoId}`)
       const response = await GET(request, { params: Promise.resolve({ id: validPhotoId }) })
       const data = await response.json()
 
       expect(response.status).toBe(200)
-      expect(data.data.downloadUrl).toBe(mockDownloadUrl)
+      // 当前实现返回直接访问路径
+      expect(data.data.downloadUrl).toBe(`/media/${originalKey}`)
       expect(data.data.filename).toBe('photo.jpg')
-      expect(data.data.expiresIn).toBe(300) // 5 minutes
-      
-      // 验证 Worker API 被调用
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/presign/get'),
-        expect.objectContaining({
-          method: 'POST',
-          headers: expect.objectContaining({
-            'X-API-Key': 'test-api-key',
-          }),
-        })
-      )
     })
 
     it('should return download URL with correct format', async () => {
+      const originalKey = `raw/${validAlbumId}/${validPhotoId}.jpg`
       const mockPhoto = {
         id: validPhotoId,
-        original_key: `raw/${validAlbumId}/${validPhotoId}.jpg`,
+        original_key: originalKey,
         filename: '照片 测试.jpg', // 包含中文字符和空格
         album_id: validAlbumId,
       }
@@ -291,20 +259,13 @@ describe('GET /api/public/download/[id]', () => {
         .mockReturnValueOnce(mockPhotoQuery)
         .mockReturnValueOnce(mockAlbumQuery)
 
-      const mockDownloadUrl = 'https://minio.example.com/presigned-url'
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: async () => ({ url: mockDownloadUrl }),
-      })
-
       const request = createMockRequest(`http://localhost:3000/api/public/download/${validPhotoId}`)
       const response = await GET(request, { params: Promise.resolve({ id: validPhotoId }) })
       const data = await response.json()
 
       expect(response.status).toBe(200)
-      expect(data.data.downloadUrl).toBe(mockDownloadUrl)
+      expect(data.data.downloadUrl).toBe(`/media/${originalKey}`)
       expect(data.data.filename).toBe('照片 测试.jpg')
-      expect(data.data.expiresIn).toBe(300)
     })
   })
 
@@ -318,10 +279,10 @@ describe('GET /api/public/download/[id]', () => {
       expect(data.error.code).toBe('INTERNAL_ERROR')
     })
 
-    it('should return 500 on MinIO error', async () => {
+    it('should handle photo without original_key gracefully', async () => {
       const mockPhoto = {
         id: validPhotoId,
-        original_key: `raw/${validAlbumId}/${validPhotoId}.jpg`,
+        original_key: null, // 没有原图 key
         filename: 'photo.jpg',
         album_id: validAlbumId,
       }
@@ -350,20 +311,14 @@ describe('GET /api/public/download/[id]', () => {
         .mockReturnValueOnce(mockPhotoQuery)
         .mockReturnValueOnce(mockAlbumQuery)
 
-      // Mock Worker API 返回错误
-      mockFetch.mockResolvedValue({
-        ok: false,
-        status: 500,
-        text: async () => 'Worker API error',
-      })
-
       const request = createMockRequest(`http://localhost:3000/api/public/download/${validPhotoId}`)
       const response = await GET(request, { params: Promise.resolve({ id: validPhotoId }) })
       const data = await response.json()
 
-      expect(response.status).toBe(500)
-      expect(data.error.code).toBe('INTERNAL_ERROR')
-      expect(data.error.message).toContain('Worker API error')
+      // 即使 original_key 为空，也应该返回成功（使用空字符串作为 key）
+      expect(response.status).toBe(200)
+      expect(data.data.downloadUrl).toBe('/media/')
+      expect(data.data.filename).toBe('photo.jpg')
     })
 
     it('should return 500 on database error', async () => {

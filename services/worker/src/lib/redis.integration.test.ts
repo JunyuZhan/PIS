@@ -8,7 +8,7 @@
  *   pnpm --filter @pis/worker test:integration
  */
 
-import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
 import Redis from 'ioredis'
 
 // Redis 连接配置（从环境变量读取或使用默认值）
@@ -18,6 +18,7 @@ const TEST_KEY_PREFIX = 'pis:test:integration:'
 
 // 获取测试 Redis 客户端
 let redisClient: Redis | null = null
+let isConnected = false
 
 function getRedisClient(): Redis {
   if (!redisClient) {
@@ -25,9 +26,10 @@ function getRedisClient(): Redis {
       host: REDIS_HOST,
       port: REDIS_PORT,
       lazyConnect: true,
+      maxRetriesPerRequest: 1,
       retryStrategy: (times: number) => {
-        if (times > 3) return null
-        return Math.min(times * 100, 3000)
+        if (times > 1) return null
+        return 100
       }
     })
   }
@@ -41,26 +43,42 @@ describe('Redis Integration Tests', () => {
     client = getRedisClient()
     try {
       await client.connect()
+      isConnected = true
       console.log('✅ Redis 连接成功')
-    } catch (error) {
+    } catch {
       console.log('⚠️  Redis 连接失败，跳过集成测试')
-      throw error
+      isConnected = false
     }
   })
 
   afterAll(async () => {
-    if (client) {
-      // 清理测试数据
-      const testKeys = await client.keys(`${TEST_KEY_PREFIX}*`)
-      if (testKeys.length > 0) {
-        await client.del(...testKeys)
+    if (client && isConnected) {
+      try {
+        // 清理测试数据
+        const testKeys = await client.keys(`${TEST_KEY_PREFIX}*`)
+        if (testKeys.length > 0) {
+          await client.del(...testKeys)
+        }
+        await client.quit()
+        console.log('✅ Redis 连接已关闭')
+      } catch {
+        // 忽略清理错误
       }
-      await client.quit()
-      console.log('✅ Redis 连接已关闭')
+    } else if (client) {
+      try {
+        client.disconnect()
+      } catch {
+        // 忽略断开连接错误
+      }
     }
   })
 
-  beforeEach(async () => {
+  beforeEach(async (ctx) => {
+    // 如果 Redis 未连接，跳过测试
+    if (!isConnected) {
+      ctx.skip()
+      return
+    }
     // 每个测试前清理相关测试数据
     const testKeys = await client.keys(`${TEST_KEY_PREFIX}*`)
     if (testKeys.length > 0) {

@@ -75,6 +75,22 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   viewer: '查看者',
 }
 
+// 内部类型定义
+interface RolePermissionRow {
+  permission_id: string
+  permissions: {
+    code: string
+  }
+}
+
+interface UserPermissionRow {
+  granted: boolean
+  expires_at: string | null
+  permissions: {
+    code: string
+  }
+}
+
 /**
  * 权限信息
  */
@@ -126,12 +142,10 @@ export async function getUserPermissions(userId: string, role: UserRole): Promis
     `)
     .eq('role', role)
 
-  if (rolePerms) {
-    for (const rp of rolePerms) {
-      const perm = rp.permissions as unknown as { code: string }
-      if (perm?.code) {
-        permissions.add(perm.code as PermissionCode)
-      }
+  const rolePermsArray = (rolePerms || []) as RolePermissionRow[]
+  for (const rp of rolePermsArray) {
+    if (rp.permissions?.code) {
+      permissions.add(rp.permissions.code as PermissionCode)
     }
   }
 
@@ -145,22 +159,20 @@ export async function getUserPermissions(userId: string, role: UserRole): Promis
     `)
     .eq('user_id', userId)
 
-  if (userPerms) {
-    const now = new Date()
-    for (const up of userPerms) {
-      const perm = up.permissions as unknown as { code: string }
-      if (!perm?.code) continue
+  const userPermsArray = (userPerms || []) as UserPermissionRow[]
+  const now = new Date()
+  for (const up of userPermsArray) {
+    if (!up.permissions?.code) continue
 
-      // 检查是否过期
-      if (up.expires_at && new Date(up.expires_at) < now) {
-        continue
-      }
+    // 检查是否过期
+    if (up.expires_at && new Date(up.expires_at) < now) {
+      continue
+    }
 
-      if (up.granted) {
-        permissions.add(perm.code as PermissionCode)
-      } else {
-        permissions.delete(perm.code as PermissionCode)
-      }
+    if (up.granted) {
+      permissions.add(up.permissions.code as PermissionCode)
+    } else {
+      permissions.delete(up.permissions.code as PermissionCode)
     }
   }
 
@@ -277,10 +289,8 @@ export async function getRolePermissions(role: UserRole): Promise<PermissionCode
     return []
   }
 
-  return (data || []).map(d => {
-    const perm = d.permissions as unknown as { code: string }
-    return perm.code as PermissionCode
-  })
+  const dataArray = (data || []) as RolePermissionRow[]
+  return dataArray.map(d => d.permissions.code as PermissionCode)
 }
 
 /**
@@ -306,18 +316,15 @@ export async function grantUserPermission(
     return false
   }
 
-  const { error } = await db
-    .from('user_permissions')
-    .upsert({
-      user_id: userId,
-      permission_id: permission.id,
-      granted: true,
-      granted_by: grantedBy,
-      expires_at: expiresAt?.toISOString() || null,
-      updated_at: new Date().toISOString(),
-    }, {
-      onConflict: 'user_id,permission_id',
-    })
+  const permData = permission as { id: string }
+  const { error } = await db.upsert('user_permissions', {
+    user_id: userId,
+    permission_id: permData.id,
+    granted: true,
+    granted_by: grantedBy,
+    expires_at: expiresAt?.toISOString() || null,
+    updated_at: new Date().toISOString(),
+  }, 'user_id,permission_id')
 
   if (error) {
     console.error('Failed to grant permission:', error)
@@ -351,17 +358,14 @@ export async function revokeUserPermission(
     return false
   }
 
-  const { error } = await db
-    .from('user_permissions')
-    .upsert({
-      user_id: userId,
-      permission_id: permission.id,
-      granted: false,
-      granted_by: grantedBy,
-      updated_at: new Date().toISOString(),
-    }, {
-      onConflict: 'user_id,permission_id',
-    })
+  const permData2 = permission as { id: string }
+  const { error } = await db.upsert('user_permissions', {
+    user_id: userId,
+    permission_id: permData2.id,
+    granted: false,
+    granted_by: grantedBy,
+    updated_at: new Date().toISOString(),
+  }, 'user_id,permission_id')
 
   if (error) {
     console.error('Failed to revoke permission:', error)
@@ -383,13 +387,14 @@ export async function resetUserPermission(
   const db = createServerSupabaseClient()
 
   // 获取权限 ID
-  const { data: permission } = await db
+  const { data: permissionData } = await db
     .from('permissions')
     .select('id')
     .eq('code', permissionCode)
     .single()
+  const permission3 = permissionData as { id: string } | null
 
-  if (!permission) {
+  if (!permission3) {
     return false
   }
 
@@ -397,7 +402,7 @@ export async function resetUserPermission(
     .from('user_permissions')
     .delete()
     .eq('user_id', userId)
-    .eq('permission_id', permission.id)
+    .eq('permission_id', permission3.id)
 
   if (error) {
     console.error('Failed to reset permission:', error)

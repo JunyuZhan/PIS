@@ -9,13 +9,20 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { requireAdmin } from '@/lib/auth-utils'
 import { handleApiError } from '@/lib/api-error'
 
+interface TranslationData {
+  locale: string
+  namespace: string
+  key: string
+  value: string
+}
+
 /**
  * GET /api/admin/translations/export
  * 导出所有自定义翻译
  */
 export async function GET(request: NextRequest) {
   try {
-    await requireAdmin()
+    await requireAdmin(request)
     const db = createServerSupabaseClient()
 
     const { searchParams } = new URL(request.url)
@@ -41,9 +48,10 @@ export async function GET(request: NextRequest) {
     }
 
     // 按语言分组
+    const translationsArray = (translations || []) as TranslationData[]
     const exportData: Record<string, Record<string, Record<string, string>>> = {}
 
-    for (const t of translations || []) {
+    for (const t of translationsArray) {
       if (!exportData[t.locale]) {
         exportData[t.locale] = {}
       }

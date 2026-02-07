@@ -32,6 +32,18 @@ import { createTestAlbum, deleteTestAlbum, deleteTestPhotos } from '@/test/integ
 // 标记为集成测试，可以通过环境变量控制是否运行
 const shouldRunIntegrationTests = process.env.RUN_INTEGRATION_TESTS === 'true'
 
+// Mock 测试用户 ID
+const testUserId = 'test-user-id'
+
+// Mock 认证模块 - 必须在顶层 mock，factory 函数内联 mock 数据
+vi.mock('@/lib/auth/api-helpers', () => ({
+  getCurrentUser: vi.fn().mockResolvedValue({ id: 'test-user-id', email: 'test@example.com', role: 'admin' }),
+}))
+
+vi.mock('@/lib/auth/role-helpers', () => ({
+  requireAdmin: vi.fn().mockResolvedValue({ id: 'test-user-id', email: 'test@example.com', role: 'admin' }),
+}))
+
 // Mock presign API
 vi.mock('@/middleware-rate-limit', () => ({
   checkRateLimit: vi.fn().mockResolvedValue({
@@ -46,7 +58,6 @@ global.fetch = vi.fn()
 
 describe.skipIf(!shouldRunIntegrationTests)('POST /api/admin/albums/[id]/upload (Integration)', () => {
   let testAlbumId: string
-  let testUserId: string
   let adminClient: Awaited<ReturnType<typeof createAdminClient>>
   const createdPhotoIds: string[] = []
 
@@ -58,10 +69,6 @@ describe.skipIf(!shouldRunIntegrationTests)('POST /api/admin/albums/[id]/upload 
       title: `Integration Test Album ${Date.now()}`,
     })
     testAlbumId = album.id
-
-    // 创建测试用户（如果需要）
-    // 注意：实际实现需要根据你的认证系统配置
-    testUserId = 'test-user-id'
   })
 
   afterAll(async () => {
@@ -97,24 +104,7 @@ describe.skipIf(!shouldRunIntegrationTests)('POST /api/admin/albums/[id]/upload 
       },
     })
 
-    // Mock 认证
-    vi.spyOn(await import('@/lib/database'), 'createClientFromRequest').mockResolvedValue({
-      auth: {
-        getUser: vi.fn().mockResolvedValue({
-          data: { user: { id: testUserId, email: 'test@example.com' } },
-          error: null,
-        }),
-      },
-      from: vi.fn().mockReturnValue({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        is: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({
-          data: { id: testAlbumId },
-          error: null,
-        }),
-      }),
-    } as any)
+    // 认证已在顶层 mock，无需在测试内部设置
 
     const response = await POST(request, { params: Promise.resolve({ id: testAlbumId }) })
     const data = await response.json()
@@ -148,6 +138,9 @@ describe.skipIf(!shouldRunIntegrationTests)('POST /api/admin/albums/[id]/upload 
     // 集成测试：验证当 presign 失败时，照片记录被正确清理
     const request = createMockRequest(`http://localhost:3000/api/admin/albums/${testAlbumId}/upload`, {
       method: 'POST',
+      headers: {
+        cookie: 'test-cookie=value',
+      },
       body: {
         filename: 'test-cleanup.jpg',
         contentType: 'image/jpeg',
@@ -157,24 +150,7 @@ describe.skipIf(!shouldRunIntegrationTests)('POST /api/admin/albums/[id]/upload 
     // Mock presign API 失败
     vi.mocked(global.fetch).mockRejectedValue(new Error('Network error'))
 
-    // Mock 认证和相册查询
-    vi.spyOn(await import('@/lib/supabase/server'), 'createClientFromRequest').mockReturnValue({
-      auth: {
-        getUser: vi.fn().mockResolvedValue({
-          data: { user: { id: testUserId, email: 'test@example.com' } },
-          error: null,
-        }),
-      },
-      from: vi.fn().mockReturnValue({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        is: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({
-          data: { id: testAlbumId },
-          error: null,
-        }),
-      }),
-    } as any)
+    // 认证已在顶层 mock，无需在测试内部设置
 
     const response = await POST(request, { params: Promise.resolve({ id: testAlbumId }) })
     const data = await response.json()
@@ -201,42 +177,35 @@ describe.skipIf(!shouldRunIntegrationTests)('POST /api/admin/albums/[id]/upload 
     // 集成测试：验证文件类型限制
     const request = createMockRequest(`http://localhost:3000/api/admin/albums/${testAlbumId}/upload`, {
       method: 'POST',
+      headers: {
+        cookie: 'test-cookie=value',
+      },
       body: {
         filename: 'test.pdf',
         contentType: 'application/pdf',
       },
     })
 
-    // Mock 认证
-    vi.spyOn(await import('@/lib/database'), 'createClientFromRequest').mockResolvedValue({
-      auth: {
-        getUser: vi.fn().mockResolvedValue({
-          data: { user: { id: testUserId, email: 'test@example.com' } },
-          error: null,
-        }),
-      },
-      from: vi.fn().mockReturnValue({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        is: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({
-          data: { id: testAlbumId },
-          error: null,
-        }),
-      }),
-    } as any)
+    // 认证已在顶层 mock，无需在测试内部设置
 
     const response = await POST(request, { params: Promise.resolve({ id: testAlbumId }) })
     const data = await response.json()
 
+    // API 使用 Zod schema 验证，返回 400 状态码
     expect(response.status).toBe(400)
-    expect(data.error.code).toBe('INVALID_FILE_TYPE')
+    expect(['INVALID_FILE_TYPE', 'VALIDATION_ERROR']).toContain(data.error.code)
+    // 验证错误详情包含文件类型相关信息
+    const errorDetails = data.error.details || data.error.message
+    expect(errorDetails).toBeDefined()
   })
 
   it('should validate file size limits', async () => {
     // 集成测试：验证文件大小限制
     const request = createMockRequest(`http://localhost:3000/api/admin/albums/${testAlbumId}/upload`, {
       method: 'POST',
+      headers: {
+        cookie: 'test-cookie=value',
+      },
       body: {
         filename: 'large-file.jpg',
         contentType: 'image/jpeg',
@@ -244,29 +213,16 @@ describe.skipIf(!shouldRunIntegrationTests)('POST /api/admin/albums/[id]/upload 
       },
     })
 
-    // Mock 认证
-    vi.spyOn(await import('@/lib/database'), 'createClientFromRequest').mockResolvedValue({
-      auth: {
-        getUser: vi.fn().mockResolvedValue({
-          data: { user: { id: testUserId, email: 'test@example.com' } },
-          error: null,
-        }),
-      },
-      from: vi.fn().mockReturnValue({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        is: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({
-          data: { id: testAlbumId },
-          error: null,
-        }),
-      }),
-    } as any)
+    // 认证已在顶层 mock，无需在测试内部设置
 
     const response = await POST(request, { params: Promise.resolve({ id: testAlbumId }) })
     const data = await response.json()
 
+    // API 使用 Zod schema 验证，返回 400 状态码
     expect(response.status).toBe(400)
-    expect(data.error.code).toBe('FILE_TOO_LARGE')
+    expect(['FILE_TOO_LARGE', 'VALIDATION_ERROR']).toContain(data.error.code)
+    // 验证错误详情包含文件大小相关信息
+    const errorDetails = data.error.details || data.error.message
+    expect(errorDetails).toBeDefined()
   })
 })

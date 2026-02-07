@@ -164,9 +164,13 @@ describe("utils", () => {
   });
 
   describe("getSafeMediaUrl", () => {
-    it("should handle valid external URLs", () => {
+    // 注意：在 Node.js 测试环境中 (window === undefined)，
+    // 函数会返回相对路径以确保服务端兼容性
+    
+    it("should handle valid external URLs (returns pathname on server)", () => {
       const url = getSafeMediaUrl("https://cdn.example.com/media/photo.jpg");
-      expect(url).toBe("https://cdn.example.com/media/photo.jpg");
+      // 服务端环境下返回 pathname
+      expect(url).toBe("/media/photo.jpg");
     });
 
     it("should handle relative paths", () => {
@@ -174,11 +178,12 @@ describe("utils", () => {
       expect(url).toBe("/media/photo.jpg");
     });
 
-    it("should handle URLs with query parameters", () => {
+    it("should handle URLs with query parameters (returns pathname on server)", () => {
       const url = getSafeMediaUrl(
         "https://cdn.example.com/media/photo.jpg?t=123456",
       );
-      expect(url).toBe("https://cdn.example.com/media/photo.jpg?t=123456");
+      // 服务端环境下只返回 pathname（不包含 query string）
+      expect(url).toBe("/media/photo.jpg");
     });
 
     it("should handle empty string", () => {

@@ -7,6 +7,14 @@ import { NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { ApiError, handleApiError, requireAuth } from '@/lib/api-utils'
 
+interface RolePermissionRow {
+  role: string
+  permission_id: string
+  permissions: {
+    code: string
+  }
+}
+
 export async function GET() {
   try {
     const { user } = await requireAuth()
@@ -40,15 +48,13 @@ export async function GET() {
 
     // 整理角色权限数据
     const rolePermsMap: Record<string, string[]> = {}
-    if (rolePermissions) {
-      for (const rp of rolePermissions) {
-        if (!rolePermsMap[rp.role]) {
-          rolePermsMap[rp.role] = []
-        }
-        const perm = rp.permissions as unknown as { code: string }
-        if (perm?.code) {
-          rolePermsMap[rp.role].push(perm.code)
-        }
+    const rolePermsArray = (rolePermissions || []) as RolePermissionRow[]
+    for (const rp of rolePermsArray) {
+      if (!rolePermsMap[rp.role]) {
+        rolePermsMap[rp.role] = []
+      }
+      if (rp.permissions?.code) {
+        rolePermsMap[rp.role].push(rp.permissions.code)
       }
     }
 

@@ -66,13 +66,29 @@ const createStyleTemplateSchema = z.object({
   is_public: z.boolean().optional(),
 })
 
+type TemplateCategory = 'wedding' | 'event' | 'portrait' | 'product' | 'travel' | 'general'
+
+interface CustomTemplateData {
+  id: string
+  name: string
+  description: string | null
+  category: TemplateCategory | null
+  theme_config: unknown
+  typography_config: unknown
+  layout_config: unknown
+  hero_config: unknown
+  hover_config: unknown
+  animation_config: unknown
+  thumbnail_url: string | null
+}
+
 /**
  * GET /api/admin/style-templates
  * 获取样式模板列表（包括内置模板和自定义模板）
  */
 export async function GET(request: NextRequest) {
   try {
-    await requireAdmin()
+    await requireAdmin(request)
     const db = createServerSupabaseClient()
 
     const { searchParams } = new URL(request.url)
@@ -114,8 +130,9 @@ export async function GET(request: NextRequest) {
     }
 
     // 添加自定义模板
-    if (customTemplates) {
-      for (const ct of customTemplates) {
+    const customTemplatesArray = (customTemplates || []) as CustomTemplateData[]
+    if (customTemplatesArray.length > 0) {
+      for (const ct of customTemplatesArray) {
         templates.push({
           id: ct.id,
           name: ct.name,
@@ -154,7 +171,10 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireAdmin()
+    const user = await requireAdmin(request)
+    if (!user) {
+      throw new ApiError('需要管理员权限', 403, 'FORBIDDEN')
+    }
     const db = createServerSupabaseClient()
 
     const body = await request.json()

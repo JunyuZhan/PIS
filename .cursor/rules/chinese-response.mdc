@@ -1,0 +1,49 @@
+---
+description: 要求所有回复使用中文
+alwaysApply: true
+---
+
+# 中文回复规则
+
+## 核心要求
+
+**所有回复必须使用中文。**
+
+这包括但不限于：
+- 代码注释和文档
+- 错误消息和提示
+- 解释和说明
+- 代码审查反馈
+- 技术讨论
+
+## 例外情况
+
+以下情况可以使用英文：
+- 代码中的变量名、函数名、类名等标识符
+- 技术术语的英文原文（可在中文后括号标注）
+- API 端点、URL、配置文件键名等
+- 第三方库和框架的名称
+
+## 示例
+
+```typescript
+// ✅ 好的做法：使用中文注释
+// 获取用户信息
+const getUserInfo = async (userId: string) => {
+  // 验证用户ID是否有效
+  if (!userId) {
+    throw new Error('用户ID不能为空');
+  }
+  // ...
+};
+
+// ❌ 不好的做法：使用英文注释
+// Get user information
+const getUserInfo = async (userId: string) => {
+  // Validate user ID
+  if (!userId) {
+    throw new Error('User ID is required');
+  }
+  // ...
+};
+```

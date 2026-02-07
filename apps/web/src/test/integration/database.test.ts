@@ -2,9 +2,12 @@
  * @fileoverview 数据库连接集成测试
  * 
  * 测试 PostgreSQL 数据库的实际连接和查询功能
+ * 
+ * 注意：这些测试需要 Docker 服务运行才能执行
+ * 如果服务不可用，测试会自动跳过
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { describe, it, expect, beforeAll } from 'vitest'
 
 // 数据库配置（从环境变量读取，测试环境使用本地 Docker）
 const dbConfig = {
@@ -15,9 +18,39 @@ const dbConfig = {
   password: process.env.DATABASE_PASSWORD || 'pis_dev_password',
 }
 
+// 数据库可用性标志
+let dbAvailable = false
+
+// 检查数据库可用性
+async function checkDatabase() {
+  try {
+    const { default: pg } = await import('pg')
+    const { Pool } = pg
+    const pool = new Pool({
+      host: dbConfig.host,
+      port: dbConfig.port,
+      database: dbConfig.database,
+      user: dbConfig.user,
+      password: dbConfig.password,
+      connectionTimeoutMillis: 2000,
+    })
+    await pool.query('SELECT 1')
+    await pool.end()
+    dbAvailable = true
+  } catch {
+    dbAvailable = false
+    console.log('⚠️  PostgreSQL 不可用，将跳过数据库集成测试')
+  }
+}
+
 describe('Database Integration Tests', () => {
+  beforeAll(async () => {
+    await checkDatabase()
+  })
+
   describe('PostgreSQL Connection', () => {
-    it('should connect to PostgreSQL successfully', async () => {
+    it('should connect to PostgreSQL successfully', async (ctx) => {
+      if (!dbAvailable) ctx.skip()
       // 动态导入 pg，避免在没有安装时阻塞
       const { default: pg } = await import('pg')
       const { Pool } = pg
@@ -41,7 +74,9 @@ describe('Database Integration Tests', () => {
       }
     })
 
-    it('should query albums table', async () => {
+    it('should query albums table', async (ctx) => {
+      if (!dbAvailable) ctx.skip()
+      
       const { default: pg } = await import('pg')
       const { Pool } = pg
       
@@ -67,7 +102,9 @@ describe('Database Integration Tests', () => {
       }
     })
 
-    it('should query photos table structure', async () => {
+    it('should query photos table structure', async (ctx) => {
+      if (!dbAvailable) ctx.skip()
+      
       const { default: pg } = await import('pg')
       const { Pool } = pg
       

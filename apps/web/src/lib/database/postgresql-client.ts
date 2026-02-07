@@ -494,6 +494,34 @@ class PostgresQueryBuilder<T = unknown> {
   }
 
   /**
+   * 插入数据（兼容 Supabase API）
+   * 支持 .from('table').insert(data).select() 链式调用
+   */
+  private insertData?: Record<string, unknown> | Record<string, unknown>[];
+  private isInsertOperation = false;
+
+  insert(
+    data: Record<string, unknown> | Record<string, unknown>[],
+  ): PostgresInsertBuilder<T> {
+    this.insertData = data;
+    this.isInsertOperation = true;
+    return new PostgresInsertBuilder(this.pool, this.table, data);
+  }
+
+  /**
+   * 更新数据（兼容 Supabase API）
+   * 支持 .from('table').update(data).eq('id', id) 链式调用
+   */
+  private updateData?: Record<string, unknown>;
+  private isUpdateOperation = false;
+
+  update(data: Record<string, unknown>): PostgresUpdateBuilder<T> {
+    this.updateData = data;
+    this.isUpdateOperation = true;
+    return new PostgresUpdateBuilder(this.pool, this.table, data);
+  }
+
+  /**
    * 删除数据（兼容 Supabase API）
    * 返回查询构建器以支持链式调用
    */
@@ -1107,4 +1135,211 @@ export function createPostgreSQLClient(): PostgreSQLClient {
 export function createPostgreSQLAdminClient(): PostgreSQLClient {
   const pool = getPool();
   return new PostgreSQLClient(pool, true);
+}
+
+/**
+ * INSERT 操作构建器
+ * 支持 .from('table').insert(data).select() 链式调用
+ */
+class PostgresInsertBuilder<T = unknown> {
+  private pool: Pool;
+  private table: string;
+  private data: Record<string, unknown> | Record<string, unknown>[];
+  private selectColumns?: string;
+  private returningSingle = false;
+
+  constructor(
+    pool: Pool,
+    table: string,
+    data: Record<string, unknown> | Record<string, unknown>[],
+  ) {
+    this.pool = pool;
+    this.table = table;
+    this.data = data;
+  }
+
+  private escapeIdentifier(identifier: string): string {
+    return `"${identifier.replace(/"/g, '""')}"`;
+  }
+
+  select(columns = "*"): this {
+    this.selectColumns = columns;
+    return this;
+  }
+
+  single(): this {
+    this.returningSingle = true;
+    return this;
+  }
+
+  async then<TResult1 = { data: T | T[] | null; error: Error | null }>(
+    resolve: (value: { data: T | T[] | null; error: Error | null }) => TResult1,
+  ): Promise<TResult1> {
+    try {
+      const escapedTable = this.escapeIdentifier(this.table);
+      const rows = Array.isArray(this.data) ? this.data : [this.data];
+
+      if (rows.length === 0) {
+        return resolve({ data: [], error: null });
+      }
+
+      const columns = Object.keys(rows[0]);
+      const escapedColumns = columns
+        .map((col) => this.escapeIdentifier(col))
+        .join(", ");
+
+      const values: QueryParameterValue[] = [];
+      const placeholders: string[] = [];
+
+      rows.forEach((row, rowIndex) => {
+        const rowPlaceholders: string[] = [];
+        columns.forEach((col, colIndex) => {
+          const paramIndex = rowIndex * columns.length + colIndex + 1;
+          rowPlaceholders.push(`$${paramIndex}`);
+          values.push(row[col] as QueryParameterValue);
+        });
+        placeholders.push(`(${rowPlaceholders.join(", ")})`);
+      });
+
+      const returning = this.selectColumns
+        ? `RETURNING ${this.selectColumns === "*" ? "*" : this.selectColumns}`
+        : "RETURNING *";
+      const query = `INSERT INTO ${escapedTable} (${escapedColumns}) VALUES ${placeholders.join(", ")} ${returning}`;
+
+      const result = await this.pool.query(query, values);
+
+      if (this.returningSingle) {
+        return resolve({
+          data: result.rows.length > 0 ? (result.rows[0] as T) : null,
+          error: null,
+        });
+      }
+
+      return resolve({
+        data: result.rows as T[],
+        error: null,
+      });
+    } catch (error) {
+      return resolve({
+        data: null,
+        error: error instanceof Error ? error : new Error(String(error)),
+      });
+    }
+  }
+}
+
+/**
+ * UPDATE 操作构建器
+ * 支持 .from('table').update(data).eq('id', id) 链式调用
+ */
+class PostgresUpdateBuilder<T = unknown> {
+  private pool: Pool;
+  private table: string;
+  private data: Record<string, unknown>;
+  private filters: DatabaseFilters = {};
+  private selectColumns?: string;
+  private returningSingle = false;
+
+  constructor(pool: Pool, table: string, data: Record<string, unknown>) {
+    this.pool = pool;
+    this.table = table;
+    this.data = data;
+  }
+
+  private escapeIdentifier(identifier: string): string {
+    return `"${identifier.replace(/"/g, '""')}"`;
+  }
+
+  eq(column: string, value: QueryParameterValue): this {
+    this.filters[column] = value;
+    return this;
+  }
+
+  neq(column: string, value: QueryParameterValue): this {
+    this.filters[`!${column}`] = value;
+    return this;
+  }
+
+  is(column: string, value: null): this {
+    this.filters[`${column}?`] = value;
+    return this;
+  }
+
+  select(columns = "*"): this {
+    this.selectColumns = columns;
+    return this;
+  }
+
+  single(): this {
+    this.returningSingle = true;
+    return this;
+  }
+
+  async then<TResult1 = { data: T | T[] | null; error: Error | null }>(
+    resolve: (value: { data: T | T[] | null; error: Error | null }) => TResult1,
+  ): Promise<TResult1> {
+    try {
+      const escapedTable = this.escapeIdentifier(this.table);
+      const columns = Object.keys(this.data);
+
+      if (columns.length === 0) {
+        return resolve({ data: null, error: new Error("No data to update") });
+      }
+
+      const values: QueryParameterValue[] = [];
+      let paramIndex = 1;
+
+      // Build SET clause
+      const setClause = columns
+        .map((col) => {
+          const escapedCol = this.escapeIdentifier(col);
+          values.push(this.data[col] as QueryParameterValue);
+          return `${escapedCol} = $${paramIndex++}`;
+        })
+        .join(", ");
+
+      // Build WHERE clause
+      const conditions: string[] = [];
+      for (const [key, value] of Object.entries(this.filters)) {
+        const cleanKey = key.replace(/^!/, "").replace(/\?$/, "");
+        const escapedKey = this.escapeIdentifier(cleanKey);
+
+        if (key.endsWith("?") && value === null) {
+          conditions.push(`${escapedKey} IS NULL`);
+        } else if (key.startsWith("!")) {
+          conditions.push(`${escapedKey} != $${paramIndex++}`);
+          values.push(value as QueryParameterValue);
+        } else {
+          conditions.push(`${escapedKey} = $${paramIndex++}`);
+          values.push(value as QueryParameterValue);
+        }
+      }
+
+      const whereClause =
+        conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+      const returning = this.selectColumns
+        ? `RETURNING ${this.selectColumns === "*" ? "*" : this.selectColumns}`
+        : "RETURNING *";
+      const query = `UPDATE ${escapedTable} SET ${setClause} ${whereClause} ${returning}`;
+
+      const result = await this.pool.query(query, values);
+
+      if (this.returningSingle) {
+        return resolve({
+          data: result.rows.length > 0 ? (result.rows[0] as T) : null,
+          error: null,
+        });
+      }
+
+      return resolve({
+        data: result.rows as T[],
+        error: null,
+      });
+    } catch (error) {
+      return resolve({
+        data: null,
+        error: error instanceof Error ? error : new Error(String(error)),
+      });
+    }
+  }
 }

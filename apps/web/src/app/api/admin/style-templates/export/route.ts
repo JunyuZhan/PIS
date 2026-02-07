@@ -9,13 +9,26 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { requireAdmin } from '@/lib/auth-utils'
 import { handleApiError } from '@/lib/api-error'
 
+interface StyleTemplateData {
+  id: string
+  name: string
+  description: string | null
+  category: string | null
+  theme_config: unknown
+  typography_config: unknown
+  layout_config: unknown
+  hero_config: unknown
+  hover_config: unknown
+  animation_config: unknown
+}
+
 /**
  * GET /api/admin/style-templates/export
  * 导出所有自定义样式模板
  */
 export async function GET(request: NextRequest) {
   try {
-    await requireAdmin()
+    await requireAdmin(request)
     const db = createServerSupabaseClient()
 
     const { searchParams } = new URL(request.url)
@@ -39,10 +52,11 @@ export async function GET(request: NextRequest) {
     }
 
     // 转换为导出格式
+    const templatesArray = (templates || []) as StyleTemplateData[]
     const exportData = {
       version: '1.0',
       exportedAt: new Date().toISOString(),
-      templates: (templates || []).map(t => ({
+      templates: templatesArray.map(t => ({
         name: t.name,
         description: t.description,
         category: t.category,

@@ -7,6 +7,10 @@ import { NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { ApiError, handleApiError, requireAuth } from '@/lib/api-utils'
 
+interface PhotoSize {
+  file_size: number | null
+}
+
 // 可备份的表及其描述
 const BACKUP_TABLES_INFO = {
   albums: { name: '相册', description: '相册基本信息' },
@@ -69,8 +73,9 @@ export async function GET() {
       .select('file_size')
       .is('deleted_at', null)
 
-    const totalStorageBytes = storageData?.reduce((sum, p) => sum + (p.file_size || 0), 0) || 0
-    const totalPhotos = storageData?.length || 0
+    const photos = (storageData || []) as PhotoSize[]
+    const totalStorageBytes = photos.reduce((sum, p) => sum + (p.file_size || 0), 0)
+    const totalPhotos = photos.length
 
     return NextResponse.json({
       tables: tableStats,

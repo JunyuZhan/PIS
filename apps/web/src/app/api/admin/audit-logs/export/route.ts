@@ -7,6 +7,19 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { ApiError, handleApiError, requireAuth } from '@/lib/api-utils'
 
+interface AuditLog {
+  created_at: string
+  user_email: string | null
+  user_role: string | null
+  action: string
+  resource_type: string
+  resource_id: string | null
+  resource_name: string | null
+  description: string | null
+  status: string
+  ip_address: string | null
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { user } = await requireAuth()
@@ -45,7 +58,8 @@ export async function GET(request: NextRequest) {
       query = query.eq('resource_type', resourceType)
     }
 
-    const { data: logs, error } = await query
+    const { data: logsData, error } = await query
+    const logs = (logsData || []) as AuditLog[]
 
     if (error) {
       throw new ApiError(`导出失败: ${error.message}`, 500)
@@ -66,7 +80,7 @@ export async function GET(request: NextRequest) {
         'IP地址',
       ]
       
-      const rows = (logs || []).map(log => [
+      const rows = logs.map(log => [
         new Date(log.created_at).toLocaleString('zh-CN'),
         log.user_email || '',
         log.user_role || '',

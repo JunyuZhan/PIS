@@ -140,6 +140,7 @@ describe('ChangePasswordForm', () => {
         body: JSON.stringify({
           currentPassword: 'oldpass123',
           newPassword: 'newpass123',
+          confirmPassword: 'newpass123',
         }),
       })
     })

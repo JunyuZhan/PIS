@@ -5,8 +5,8 @@ import { Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger'
-  size?: 'sm' | 'md' | 'lg'
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline' | 'default' | 'destructive'
+  size?: 'sm' | 'md' | 'lg' | 'icon'
   isLoading?: boolean
   fullWidth?: boolean
 }
@@ -34,15 +34,19 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 
     const variantClasses = {
       primary: 'bg-accent text-background hover:bg-accent/90 active:scale-[0.98]',
+      default: 'bg-accent text-background hover:bg-accent/90 active:scale-[0.98]',
       secondary: 'bg-surface-elevated text-text-primary border border-border hover:bg-surface hover:border-border-light active:scale-[0.98]',
       ghost: 'text-text-secondary hover:text-text-primary hover:bg-surface active:scale-[0.98]',
       danger: 'bg-red-500 text-white hover:bg-red-600 active:scale-[0.98]',
+      destructive: 'bg-red-500 text-white hover:bg-red-600 active:scale-[0.98]',
+      outline: 'border border-border bg-transparent text-text-primary hover:bg-surface hover:border-border-light active:scale-[0.98]',
     }
     
     const sizeClasses = {
       sm: 'px-3 py-1.5 text-sm min-h-[36px]',
       md: 'px-4 py-2 text-base min-h-[44px]', // 移动端标准触摸目标
       lg: 'px-6 py-3 text-lg min-h-[48px]',
+      icon: 'h-10 w-10 p-2',
     }
     
     return (

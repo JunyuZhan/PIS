@@ -8,6 +8,11 @@ interface RouteParams {
   params: Promise<{ id: string }>
 }
 
+interface Album {
+  id: string
+  title: string
+}
+
 // 关联创建 schema
 const linkAlbumSchema = z.object({
   albumId: z.string().uuid('无效的相册 ID'),
@@ -45,12 +50,13 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // 验证相册存在
-    const { data: album } = await db.from('albums')
+    const { data: albumData } = await db.from('albums')
       .select('id, title')
       .eq('id', albumId)
       .is('deleted_at', null)
       .single()
 
+    const album = albumData as Album | null
     if (!album) {
       return ApiError.notFound('相册不存在')
     }

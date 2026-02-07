@@ -2,9 +2,12 @@
  * @fileoverview 服务集成测试
  * 
  * 测试真实的服务集成，包括数据库和缓存的完整流程
+ * 
+ * 注意：这些测试需要 Docker 服务运行才能执行
+ * 如果服务不可用，测试会自动跳过
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { describe, it, expect, beforeAll, beforeEach } from 'vitest'
 
 // 服务配置
 const serviceConfig = {
@@ -22,8 +25,70 @@ const serviceConfig = {
   },
 }
 
+// 服务可用性标志
+let dbAvailable = false
+let redisAvailable = false
+
+// 检查服务可用性
+async function checkServices() {
+  // 检查 PostgreSQL
+  try {
+    const { default: pg } = await import('pg')
+    const { Pool } = pg
+    const pool = new Pool({
+      host: serviceConfig.database.host,
+      port: serviceConfig.database.port,
+      database: serviceConfig.database.database,
+      user: serviceConfig.database.user,
+      password: serviceConfig.database.password,
+      connectionTimeoutMillis: 2000,
+    })
+    await pool.query('SELECT 1')
+    await pool.end()
+    dbAvailable = true
+  } catch {
+    dbAvailable = false
+  }
+
+  // 检查 Redis
+  try {
+    const { default: redis } = await import('redis')
+    const client = redis.createClient({
+      socket: {
+        host: serviceConfig.redis.host,
+        port: serviceConfig.redis.port,
+        connectTimeout: 2000,
+      },
+      password: serviceConfig.redis.password || undefined,
+    })
+    await client.connect()
+    await client.ping()
+    await client.quit()
+    redisAvailable = true
+  } catch {
+    redisAvailable = false
+  }
+
+  if (!dbAvailable) {
+    console.log('⚠️  PostgreSQL 不可用，将跳过数据库相关测试')
+  }
+  if (!redisAvailable) {
+    console.log('⚠️  Redis 不可用，将跳过缓存相关测试')
+  }
+}
+
 describe('Service Integration Tests', () => {
+  beforeAll(async () => {
+    await checkServices()
+  })
+
   describe('Full Stack Integration', () => {
+    beforeEach((ctx) => {
+      if (!dbAvailable || !redisAvailable) {
+        ctx.skip()
+      }
+    })
+
     it('should connect to both PostgreSQL and Redis', async () => {
       const { default: pg } = await import('pg')
       const { Pool } = pg
@@ -74,7 +139,9 @@ describe('Service Integration Tests', () => {
       }
     })
 
-    it('should perform database album operations', async () => {
+    it('should perform database album operations', async (ctx) => {
+      if (!dbAvailable) ctx.skip()
+      
       const { default: pg } = await import('pg')
       const { Pool } = pg
       
@@ -112,7 +179,9 @@ describe('Service Integration Tests', () => {
       }
     })
 
-    it('should perform database photo operations', async () => {
+    it('should perform database photo operations', async (ctx) => {
+      if (!dbAvailable) ctx.skip()
+      
       const { default: pg } = await import('pg')
       const { Pool } = pg
       
@@ -143,7 +212,9 @@ describe('Service Integration Tests', () => {
       }
     })
 
-    it('should perform cache operations with session simulation', async () => {
+    it('should perform cache operations with session simulation', async (ctx) => {
+      if (!redisAvailable) ctx.skip()
+      
       const { default: redis } = await import('redis')
       
       const client = redis.createClient({
@@ -184,7 +255,9 @@ describe('Service Integration Tests', () => {
       }
     })
 
-    it('should handle rate limiting simulation', async () => {
+    it('should handle rate limiting simulation', async (ctx) => {
+      if (!redisAvailable) ctx.skip()
+      
       const { default: redis } = await import('redis')
       
       const client = redis.createClient({

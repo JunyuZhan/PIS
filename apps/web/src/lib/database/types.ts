@@ -34,6 +34,31 @@ export type QueryParameterValue = string | number | boolean | null | Date | stri
 export type RpcParams = Record<string, DatabaseValue>
 
 /**
+ * Insert 操作构建器接口
+ */
+export interface InsertBuilder<T = unknown> {
+  select(columns?: string): this
+  single(): this
+  then<TResult1 = { data: T | T[] | null; error: Error | null }>(
+    resolve: (value: { data: T | T[] | null; error: Error | null }) => TResult1
+  ): Promise<TResult1>
+}
+
+/**
+ * Update 操作构建器接口
+ */
+export interface UpdateBuilder<T = unknown> {
+  eq(column: string, value: QueryParameterValue): this
+  neq(column: string, value: QueryParameterValue): this
+  is(column: string, value: null): this
+  select(columns?: string): this
+  single(): this
+  then<TResult1 = { data: T | T[] | null; error: Error | null }>(
+    resolve: (value: { data: T | T[] | null; error: Error | null }) => TResult1
+  ): Promise<TResult1>
+}
+
+/**
  * 查询构建器接口（兼容 Supabase 和 PostgreSQL）
  */
 export interface QueryBuilder<T = unknown> {
@@ -56,6 +81,8 @@ export interface QueryBuilder<T = unknown> {
   single(): Promise<{ data: T | null; error: Error | null }>
   maybeSingle(): Promise<{ data: T | null; error: Error | null }>
   delete(): this
+  insert(data: Record<string, unknown> | Record<string, unknown>[]): InsertBuilder<T>
+  update(data: Record<string, unknown>): UpdateBuilder<T>
   execute<TResult = T>(): Promise<{ data: TResult[] | null; error: Error | null; count?: number }>
   // Promise-like 接口（兼容 Supabase）
   then<TResult1 = { data: T[] | null; error: Error | null; count?: number }, TResult2 = never>(

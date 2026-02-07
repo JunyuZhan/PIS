@@ -104,7 +104,8 @@ export async function generateMetadata(): Promise<Metadata> {
   let siteSettings: Record<string, unknown> = {};
   try {
     const { getPublicSettings } = await import("@/lib/settings");
-    siteSettings = (await getPublicSettings()) || {};
+    const settings = await getPublicSettings();
+    siteSettings = settings ? { ...settings } : {};
   } catch (e) {
     console.warn("Failed to load site settings for metadata:", e);
   }

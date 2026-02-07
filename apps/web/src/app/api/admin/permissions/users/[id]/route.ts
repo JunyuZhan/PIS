@@ -20,6 +20,27 @@ interface RouteParams {
   params: Promise<{ id: string }>
 }
 
+interface UserInfo {
+  id: string
+  email: string
+  role: string
+}
+
+interface SpecialPermissionRow {
+  granted: boolean
+  expires_at: string | null
+  permissions: {
+    code: string
+    name: string
+  }
+}
+
+interface RolePermissionRow {
+  permissions: {
+    code: string
+  }
+}
+
 const updateUserPermissionsSchema = z.object({
   grants: z.array(z.object({
     code: z.string(),
@@ -40,11 +61,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const db = createServerSupabaseClient()
 
     // 获取用户信息
-    const { data: targetUser, error: userError } = await db
+    const { data: targetUserData, error: userError } = await db
       .from('users')
       .select('id, email, role')
       .eq('id', userId)
       .single()
+    const targetUser = targetUserData as UserInfo | null
 
     if (userError || !targetUser) {
       throw new ApiError('用户不存在', 404)
@@ -74,11 +96,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       `)
       .eq('role', targetUser.role)
 
+    const rolePermsArray = (rolePermissions || []) as RolePermissionRow[]
     const rolePermCodes = new Set(
-      (rolePermissions || []).map(rp => {
-        const perm = rp.permissions as unknown as { code: string }
-        return perm.code
-      })
+      rolePermsArray.map(rp => rp.permissions.code)
     )
 
     return NextResponse.json({
@@ -90,11 +110,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       },
       effectivePermissions: Array.from(effectivePermissions),
       rolePermissions: Array.from(rolePermCodes),
-      specialPermissions: (specialPermissions || []).map(sp => {
-        const perm = sp.permissions as unknown as { code: string; name: string }
+      specialPermissions: ((specialPermissions || []) as SpecialPermissionRow[]).map(sp => {
         return {
-          code: perm.code,
-          name: perm.name,
+          code: sp.permissions.code,
+          name: sp.permissions.name,
           granted: sp.granted,
           expiresAt: sp.expires_at,
         }
@@ -125,11 +144,12 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const db = createServerSupabaseClient()
 
     // 验证用户存在
-    const { data: targetUser, error: userError } = await db
+    const { data: targetUserData2, error: userError } = await db
       .from('users')
       .select('id, role')
       .eq('id', userId)
       .single()
+    const targetUser = targetUserData2 as { id: string; role: string } | null
 
     if (userError || !targetUser) {
       throw new ApiError('用户不存在', 404)
@@ -141,12 +161,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
 
     // 获取所有权限
-    const { data: allPermissions } = await db
+    const { data: allPermissionsData } = await db
       .from('permissions')
       .select('id, code')
+    const allPermissions = (allPermissionsData || []) as { id: string; code: string }[]
 
     const permissionMap = new Map(
-      (allPermissions || []).map(p => [p.code, p.id])
+      allPermissions.map(p => [p.code, p.id])
     )
 
     // 更新用户特殊权限
@@ -163,18 +184,14 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
           .eq('permission_id', permissionId)
       } else {
         // 更新或插入特殊权限
-        await db
-          .from('user_permissions')
-          .upsert({
-            user_id: userId,
-            permission_id: permissionId,
-            granted: grant.granted,
-            granted_by: user.id,
-            expires_at: grant.expiresAt || null,
-            updated_at: new Date().toISOString(),
-          }, {
-            onConflict: 'user_id,permission_id',
-          })
+        await db.upsert('user_permissions', {
+          user_id: userId,
+          permission_id: permissionId,
+          granted: grant.granted,
+          granted_by: user.id,
+          expires_at: grant.expiresAt || null,
+          updated_at: new Date().toISOString(),
+        }, 'user_id,permission_id')
       }
     }
 

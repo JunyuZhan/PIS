@@ -60,13 +60,33 @@ interface RouteParams {
   params: Promise<{ id: string }>
 }
 
+type TemplateCategory = 'wedding' | 'event' | 'portrait' | 'product' | 'travel' | 'general'
+
+interface StyleTemplateData {
+  id: string
+  name: string
+  description: string | null
+  category: TemplateCategory | null
+  theme_config: unknown
+  typography_config: unknown
+  layout_config: unknown
+  hero_config: unknown
+  hover_config: unknown
+  animation_config: unknown
+  thumbnail_url: string | null
+  is_public: boolean
+  sort_order: number
+  created_at: string
+  updated_at: string
+}
+
 /**
  * GET /api/admin/style-templates/[id]
  * 获取单个样式模板
  */
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    await requireAdmin()
+    await requireAdmin(request)
     const { id } = await params
 
     // 先检查是否是内置模板
@@ -82,11 +102,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     // 查询数据库
     const db = createServerSupabaseClient()
-    const { data, error } = await db
+    const { data: templateData, error } = await db
       .from('style_templates')
       .select('*')
       .eq('id', id)
       .single()
+    const data = templateData as StyleTemplateData | null
 
     if (error || !data) {
       throw new ApiError('模板不存在', 404, 'NOT_FOUND')
@@ -124,7 +145,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
  */
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
-    await requireAdmin()
+    await requireAdmin(request)
     const { id } = await params
     const db = createServerSupabaseClient()
 
@@ -194,7 +215,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
  */
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    await requireAdmin()
+    await requireAdmin(request)
     const { id } = await params
     const db = createServerSupabaseClient()
 

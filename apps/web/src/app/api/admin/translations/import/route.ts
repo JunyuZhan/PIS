@@ -28,7 +28,7 @@ const importDataSchema = z.record(
  */
 export async function POST(request: NextRequest) {
   try {
-    await requireAdmin()
+    await requireAdmin(request)
     const db = createServerSupabaseClient()
 
     const body = await request.json()
@@ -83,9 +83,7 @@ export async function POST(request: NextRequest) {
     for (let i = 0; i < translations.length; i += batchSize) {
       const batch = translations.slice(i, i + batchSize)
       
-      const { error } = await db
-        .from('custom_translations')
-        .upsert(batch, { onConflict: 'locale,namespace,key' })
+      const { error } = await db.upsert('custom_translations', batch, 'locale,namespace,key')
 
       if (error) {
         console.error('Batch upsert error:', error)

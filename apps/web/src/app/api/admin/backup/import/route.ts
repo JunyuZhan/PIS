@@ -44,7 +44,11 @@ export async function POST(request: NextRequest) {
     }
 
     // 解析选项
-    let options = { mode: 'merge' as const, skipExisting: true, tables: undefined as string[] | undefined }
+    let options: { mode: 'merge' | 'replace'; skipExisting: boolean; tables: string[] | undefined } = { 
+      mode: 'merge', 
+      skipExisting: true, 
+      tables: undefined 
+    }
     if (optionsStr) {
       try {
         const parsed = JSON.parse(optionsStr)
@@ -89,12 +93,14 @@ export async function POST(request: NextRequest) {
 
       for (const record of tableData) {
         try {
+          const recordId = record.id as string | undefined
+          
           // 检查记录是否存在（如果有 id 字段）
-          if (options.skipExisting && record.id) {
+          if (options.skipExisting && recordId) {
             const { data: existing } = await db
               .from(table)
               .select('id')
-              .eq('id', record.id)
+              .eq('id', recordId)
               .single()
 
             if (existing) {
@@ -104,7 +110,7 @@ export async function POST(request: NextRequest) {
           }
 
           // 清理记录（移除可能导致问题的字段）
-          const cleanRecord = { ...record }
+          const cleanRecord = { ...record } as Record<string, unknown>
           
           // 对于某些表，需要特殊处理
           if (table === 'albums' || table === 'photos' || table === 'customers') {
@@ -115,20 +121,16 @@ export async function POST(request: NextRequest) {
           }
 
           // 插入或更新
-          if (options.mode === 'replace' && record.id) {
-            const { error } = await db
-              .from(table)
-              .upsert(cleanRecord, { onConflict: 'id' })
+          if (options.mode === 'replace' && recordId) {
+            const { error } = await db.upsert(table, cleanRecord, 'id')
 
             if (error) {
-              results[table].errors.push(`ID ${record.id}: ${error.message}`)
+              results[table].errors.push(`ID ${recordId}: ${error.message}`)
             } else {
               results[table].imported++
             }
           } else {
-            const { error } = await db
-              .from(table)
-              .insert(cleanRecord)
+            const { error } = await db.insert(table, cleanRecord)
 
             if (error) {
               // 忽略重复键错误

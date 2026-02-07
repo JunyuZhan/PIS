@@ -1,5 +1,10 @@
 import { createClient } from './database'
 
+interface SettingRow {
+  key: string
+  value: unknown
+}
+
 export interface PublicSettings {
   // 品牌
   brand_name: string
@@ -70,7 +75,8 @@ export async function getPublicSettings(): Promise<PublicSettings> {
 
     // 转换为对象
     const result: Record<string, unknown> = {}
-    for (const setting of settings || []) {
+    const settingsList = (settings || []) as SettingRow[]
+    for (const setting of settingsList) {
       result[setting.key] = setting.value
     }
 

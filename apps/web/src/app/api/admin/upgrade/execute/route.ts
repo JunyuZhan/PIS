@@ -50,7 +50,8 @@ async function recordUpgradeHistory(
         rebuild_performed: options.rebuildPerformed || false,
         notes: options.notes || null,
       })
-      return data?.[0]?.id || null
+      const result = data as { id: string }[] | null
+      return result?.[0]?.id || null
     }
   } catch (error) {
     console.error('记录升级历史失败:', error)

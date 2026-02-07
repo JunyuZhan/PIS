@@ -275,12 +275,14 @@ export async function POST(request: NextRequest) {
     }
 
     // 记录操作日志
-    logCreate(
-      { id: admin.id, email: admin.email, role: admin.role },
-      'album',
-      data.id,
-      data.title
-    )
+    if (data.id) {
+      logCreate(
+        { id: admin.id, email: admin.email, role: admin.role },
+        'album',
+        data.id,
+        data.title
+      )
+    }
 
     // 返回创建结果（包含 upload_token 用于 FTP 配置）
     return createSuccessResponse({

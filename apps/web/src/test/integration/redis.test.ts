@@ -2,9 +2,12 @@
  * @fileoverview Redis 连接集成测试
  * 
  * 测试 Redis 的实际连接和缓存读写功能
+ * 
+ * 注意：这些测试需要 Docker 服务运行才能执行
+ * 如果服务不可用，测试会自动跳过
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { describe, it, expect, beforeAll } from 'vitest'
 
 // Redis 配置（从环境变量读取，测试环境使用本地 Docker）
 const redisConfig = {
@@ -13,9 +16,39 @@ const redisConfig = {
   password: process.env.REDIS_PASSWORD || '',
 }
 
+// Redis 可用性标志
+let redisAvailable = false
+
+// 检查 Redis 可用性
+async function checkRedis() {
+  try {
+    const { default: redis } = await import('redis')
+    const client = redis.createClient({
+      socket: {
+        host: redisConfig.host,
+        port: redisConfig.port,
+        connectTimeout: 2000,
+      },
+      password: redisConfig.password || undefined,
+    })
+    await client.connect()
+    await client.ping()
+    await client.quit()
+    redisAvailable = true
+  } catch {
+    redisAvailable = false
+    console.log('⚠️  Redis 不可用，将跳过 Redis 集成测试')
+  }
+}
+
 describe('Redis Integration Tests', () => {
+  beforeAll(async () => {
+    await checkRedis()
+  })
+
   describe('Redis Connection', () => {
-    it('should connect to Redis successfully using redis-cli', async () => {
+    it('should connect to Redis successfully using redis-cli', async (ctx) => {
+      if (!redisAvailable) ctx.skip()
       const { execSync } = await import('child_process')
       
       try {
@@ -44,7 +77,9 @@ describe('Redis Integration Tests', () => {
       }
     })
 
-    it('should perform read/write operations', async () => {
+    it('should perform read/write operations', async (ctx) => {
+      if (!redisAvailable) ctx.skip()
+      
       const { execSync } = await import('child_process')
       
       // 使用 Docker 执行 Redis 命令
@@ -71,7 +106,7 @@ describe('Redis Integration Tests', () => {
           `docker exec pis-redis-dev redis-cli DEL ${testKey}`,
           { encoding: 'utf-8' }
         )
-      } catch (error) {
+      } catch {
         // 如果 Docker 命令失败，使用 Node.js 客户端
         const { default: redis } = await import('redis')
         const client = redis.createClient({
@@ -97,7 +132,9 @@ describe('Redis Integration Tests', () => {
       }
     })
 
-    it('should support TTL operations', async () => {
+    it('should support TTL operations', async (ctx) => {
+      if (!redisAvailable) ctx.skip()
+      
       const { execSync } = await import('child_process')
       
       const testKey = 'integration:test:ttl'
@@ -124,7 +161,7 @@ describe('Redis Integration Tests', () => {
           `docker exec pis-redis-dev redis-cli DEL ${testKey}`,
           { encoding: 'utf-8' }
         )
-      } catch (error) {
+      } catch {
         // 如果 Docker 命令失败，使用 Node.js 客户端
         const { default: redis } = await import('redis')
         const client = redis.createClient({

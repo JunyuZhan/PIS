@@ -3,6 +3,24 @@ import { requireAdmin } from '@/lib/auth/role-helpers'
 import { createAdminClient } from '@/lib/database'
 import { ApiError } from '@/lib/validation/error-handler'
 
+interface UpgradeHistory {
+  id: string
+  from_version: string
+  to_version: string
+  status: string
+  executed_by: string | null
+  started_at: string
+  completed_at: string | null
+  error_message: string | null
+  notes: string | null
+}
+
+interface UserData {
+  id: string
+  name: string | null
+  email: string
+}
+
 /**
  * GET /api/admin/upgrade/history
  * 获取升级历史记录
@@ -51,23 +69,25 @@ export async function GET(request: NextRequest) {
     const total = parseInt(countData?.[0]?.total || '0')
 
     // 获取执行人信息
-    const executorIds = [...new Set((history || []).map(h => h.executed_by).filter(Boolean))]
+    const historyArray = (history || []) as UpgradeHistory[]
+    const executorIds = [...new Set(historyArray.map(h => h.executed_by).filter(Boolean))] as string[]
     let executors: Record<string, string> = {}
     
     if (executorIds.length > 0) {
-      const { data: users } = await db
+      const { data: usersData } = await db
         .from('users')
         .select('id, name, email')
         .in('id', executorIds)
+      const users = (usersData || []) as UserData[]
       
-      executors = (users || []).reduce((acc, user) => {
+      executors = users.reduce((acc, user) => {
         acc[user.id] = user.name || user.email
         return acc
       }, {} as Record<string, string>)
     }
 
     // 格式化返回数据
-    const formattedHistory = (history || []).map(item => ({
+    const formattedHistory = historyArray.map(item => ({
       ...item,
       executor_name: item.executed_by ? executors[item.executed_by] : null,
       duration: item.completed_at && item.started_at

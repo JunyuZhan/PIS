@@ -14,6 +14,22 @@ interface RouteParams {
   params: Promise<{ role: string }>
 }
 
+interface RolePermissionRow {
+  permission_id: string
+  permissions: {
+    id: string
+    code: string
+    name: string
+    description: string
+    category: string
+  }
+}
+
+interface PermissionRow {
+  id: string
+  code: string
+}
+
 const updateRolePermissionsSchema = z.object({
   permissions: z.array(z.string()),
 })
@@ -48,15 +64,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       throw new ApiError(`获取角色权限失败: ${error.message}`, 500)
     }
 
-    const permissions = (rolePermissions || []).map(rp => {
-      const perm = rp.permissions as unknown as {
-        id: string
-        code: string
-        name: string
-        description: string
-        category: string
-      }
-      return perm
+    const permRows = (rolePermissions || []) as RolePermissionRow[]
+    const permissions = permRows.map(rp => {
+      return rp.permissions
     })
 
     return NextResponse.json({
@@ -109,7 +119,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       throw new ApiError(`获取权限失败: ${permsError.message}`, 500)
     }
 
-    const permissionIds = (permissionsList || []).map(p => p.id)
+    const permsArray = (permissionsList || []) as PermissionRow[]
+    const permissionIds = permsArray.map(p => p.id)
 
     // 删除现有角色权限
     const { error: deleteError } = await db

@@ -6,6 +6,22 @@ interface RouteParams {
   params: Promise<{ id: string }>
 }
 
+interface CustomerAssociation {
+  customer_id: string
+  role: string
+  notes: string | null
+}
+
+interface Customer {
+  id: string
+  name: string
+  phone: string | null
+  email: string | null
+  company: string | null
+  status: string
+  tags: string[] | null
+}
+
 /**
  * 获取相册关联的客户列表
  * GET /api/admin/albums/[id]/customers
@@ -32,10 +48,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const db = await createAdminClient()
 
     // 获取相册关联的客户
-    const { data: associations, error: assocError } = await db
+    const { data: assocData, error: assocError } = await db
       .from('customer_albums')
       .select('customer_id, role, notes')
       .eq('album_id', albumId)
+    
+    const associations = (assocData || []) as CustomerAssociation[]
 
     if (assocError) {
       console.error('获取关联失败:', assocError)
@@ -45,7 +63,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    if (!associations || associations.length === 0) {
+    if (associations.length === 0) {
       return NextResponse.json({
         success: true,
         data: [],
@@ -69,7 +87,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // 合并关联信息
-    const result = (customers || []).map(customer => {
+    const customerList = (customers || []) as Customer[]
+    const result = customerList.map(customer => {
       const assoc = associations.find(a => a.customer_id === customer.id)
       return {
         ...customer,

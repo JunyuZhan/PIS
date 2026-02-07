@@ -7,6 +7,22 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { ApiError, handleApiError, requireAuth } from '@/lib/api-utils'
 
+interface ActionRow {
+  action: string
+}
+
+interface ResourceRow {
+  resource_type: string
+}
+
+interface UserRow {
+  user_email: string | null
+}
+
+interface DateRow {
+  created_at: string
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { user } = await requireAuth()
@@ -73,7 +89,8 @@ export async function GET(request: NextRequest) {
         .gte('created_at', startDateStr)
       
       const counts: Record<string, number> = {}
-      data?.forEach(row => {
+      const rows = (data || []) as ActionRow[]
+      rows.forEach(row => {
         counts[row.action] = (counts[row.action] || 0) + 1
       })
       actionStatsResult = Object.entries(counts).map(([action, count]) => ({ action, count }))
@@ -86,7 +103,8 @@ export async function GET(request: NextRequest) {
         .gte('created_at', startDateStr)
       
       const counts: Record<string, number> = {}
-      data?.forEach(row => {
+      const rows = (data || []) as ResourceRow[]
+      rows.forEach(row => {
         counts[row.resource_type] = (counts[row.resource_type] || 0) + 1
       })
       resourceStatsResult = Object.entries(counts).map(([resource_type, count]) => ({ resource_type, count }))
@@ -100,7 +118,8 @@ export async function GET(request: NextRequest) {
         .not('user_email', 'is', null)
       
       const counts: Record<string, number> = {}
-      data?.forEach(row => {
+      const rows = (data || []) as UserRow[]
+      rows.forEach(row => {
         if (row.user_email) {
           counts[row.user_email] = (counts[row.user_email] || 0) + 1
         }
@@ -118,7 +137,8 @@ export async function GET(request: NextRequest) {
         .gte('created_at', startDateStr)
       
       const counts: Record<string, number> = {}
-      data?.forEach(row => {
+      const rows = (data || []) as DateRow[]
+      rows.forEach(row => {
         const date = new Date(row.created_at).toISOString().split('T')[0]
         counts[date] = (counts[date] || 0) + 1
       })

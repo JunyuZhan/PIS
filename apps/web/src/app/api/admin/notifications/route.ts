@@ -3,6 +3,34 @@ import { requireAdmin } from '@/lib/auth/role-helpers'
 import { createAdminClient } from '@/lib/database'
 import { ApiError } from '@/lib/validation/error-handler'
 
+interface Notification {
+  id: string
+  customer_id: string | null
+  album_id: string | null
+  type: string
+  status: string
+  title: string
+  message: string
+  created_at: string
+  sent_at: string | null
+  error_message: string | null
+  channel?: string
+  recipient?: string
+  subject?: string
+}
+
+interface CustomerData {
+  id: string
+  name: string
+  email: string
+}
+
+interface AlbumData {
+  id: string
+  title: string
+  slug: string
+}
+
 /**
  * GET /api/admin/notifications
  * 获取通知历史记录
@@ -51,7 +79,8 @@ export async function GET(request: NextRequest) {
 
     // 分页
     query = query.range(offset, offset + limit - 1)
-    const { data: notifications, error } = await query
+    const { data: notificationsData, error } = await query
+    const notifications = (notificationsData || []) as Notification[]
 
     if (error) {
       console.error('获取通知列表失败:', error)
@@ -59,36 +88,38 @@ export async function GET(request: NextRequest) {
     }
 
     // 获取关联的客户和相册信息
-    const customerIds = [...new Set(notifications?.filter(n => n.customer_id).map(n => n.customer_id))]
-    const albumIds = [...new Set(notifications?.filter(n => n.album_id).map(n => n.album_id))]
+    const customerIds = [...new Set(notifications.filter(n => n.customer_id).map(n => n.customer_id as string))]
+    const albumIds = [...new Set(notifications.filter(n => n.album_id).map(n => n.album_id as string))]
 
     let customers: Record<string, { name: string; email: string }> = {}
     let albums: Record<string, { title: string; slug: string }> = {}
 
     if (customerIds.length > 0) {
-      const { data: customerData } = await db
+      const { data: customerResult } = await db
         .from('customers')
         .select('id, name, email')
         .in('id', customerIds)
       
-      customerData?.forEach(c => {
+      const customerData = (customerResult || []) as CustomerData[]
+      customerData.forEach(c => {
         customers[c.id] = { name: c.name, email: c.email }
       })
     }
 
     if (albumIds.length > 0) {
-      const { data: albumData } = await db
+      const { data: albumResult } = await db
         .from('albums')
         .select('id, title, slug')
         .in('id', albumIds)
       
-      albumData?.forEach(a => {
+      const albumData = (albumResult || []) as AlbumData[]
+      albumData.forEach(a => {
         albums[a.id] = { title: a.title, slug: a.slug }
       })
     }
 
     // 格式化结果
-    const formattedNotifications = notifications?.map(n => ({
+    const formattedNotifications = notifications.map((n) => ({
       id: n.id,
       type: n.type,
       channel: n.channel,

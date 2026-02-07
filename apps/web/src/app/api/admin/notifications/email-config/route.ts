@@ -4,6 +4,19 @@ import { createAdminClient } from '@/lib/database'
 import { ApiError } from '@/lib/validation/error-handler'
 import { z } from 'zod'
 
+interface EmailConfig {
+  id: string
+  smtp_host: string
+  smtp_port: number
+  smtp_secure: boolean
+  smtp_user: string
+  smtp_pass?: string
+  from_email: string
+  from_name: string | null
+  is_active: boolean
+  updated_at: string
+}
+
 // 邮件配置验证
 const emailConfigSchema = z.object({
   smtp_host: z.string().min(1, '请输入 SMTP 服务器地址'),
@@ -28,12 +41,14 @@ export async function GET(request: NextRequest) {
     }
 
     const db = await createAdminClient()
-    const { data: config, error } = await db
+    const { data: configData, error } = await db
       .from('email_config')
-      .select('id, smtp_host, smtp_port, smtp_secure, smtp_user, from_email, from_name, is_active, updated_at')
+      .select('id, smtp_host, smtp_port, smtp_secure, smtp_user, smtp_pass, from_email, from_name, is_active, updated_at')
       .order('created_at', { ascending: false })
       .limit(1)
       .single()
+    
+    const config = configData as EmailConfig | null
 
     // 如果数据库中没有配置，检查环境变量
     const envConfig = {
@@ -96,11 +111,13 @@ export async function POST(request: NextRequest) {
     const db = await createAdminClient()
 
     // 检查是否已有配置
-    const { data: existing } = await db
+    const { data: existingData } = await db
       .from('email_config')
       .select('id')
       .limit(1)
       .single()
+    
+    const existing = existingData as { id: string } | null
 
     if (existing) {
       // 更新配置
