@@ -50,7 +50,7 @@ const defaultSettings: SystemSettings = {
   social_email: '',
   social_phone: '',
   theme_mode: 'system',
-  theme_primary_color: '#4F46E5',
+  theme_primary_color: '#D4AF37',
 }
 
 const SettingsContext = createContext<SettingsContextValue>({

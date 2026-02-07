@@ -74,7 +74,7 @@ const defaultFormData: SettingsFormData = {
   social_instagram: '',
   wechat_qrcode_url: '',
   theme_mode: 'system',
-  theme_primary_color: '#4F46E5',
+  theme_primary_color: '#D4AF37',
   theme_border_radius: 'md',
 }
 
@@ -181,7 +181,7 @@ export function SystemSettingsSection() {
       // 主题设置
       if (grouped.theme) {
         newFormData.theme_mode = (grouped.theme.theme_mode as string) || 'system'
-        newFormData.theme_primary_color = (grouped.theme.theme_primary_color as string) || '#4F46E5'
+        newFormData.theme_primary_color = (grouped.theme.theme_primary_color as string) || '#D4AF37'
         newFormData.theme_border_radius = (grouped.theme.theme_border_radius as string) || 'md'
       }
 

@@ -20,14 +20,14 @@ const ThemeContext = createContext<ThemeContextValue>({
   theme: 'system',
   resolvedTheme: 'dark',
   setTheme: () => {},
-  primaryColor: '#4F46E5',
+  primaryColor: '#D4AF37',
   setPrimaryColor: () => {},
   borderRadius: 'md',
   setBorderRadius: () => {},
 })
 
 // 默认主色调
-const DEFAULT_PRIMARY_COLOR = '#4F46E5'
+const DEFAULT_PRIMARY_COLOR = '#D4AF37'
 const DEFAULT_BORDER_RADIUS = 'md'
 
 // 圆角值映射

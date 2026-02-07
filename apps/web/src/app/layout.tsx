@@ -204,7 +204,7 @@ export default async function RootLayout({
                   }
                   document.documentElement.classList.add(resolved);
                   
-                  var color = localStorage.getItem('pis-primary-color') || '#4F46E5';
+                  var color = localStorage.getItem('pis-primary-color') || '#D4AF37';
                   var hex = color.replace('#', '');
                   var r = parseInt(hex.substring(0, 2), 16);
                   var g = parseInt(hex.substring(2, 4), 16);

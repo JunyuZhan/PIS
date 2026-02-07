@@ -86,6 +86,6 @@ function getDefaultPublicSettings(): Record<string, unknown> {
     social_phone: '',
     // 主题
     theme_mode: 'system',
-    theme_primary_color: '#4F46E5',
+    theme_primary_color: '#D4AF37',
   }
 }

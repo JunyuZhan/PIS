@@ -471,7 +471,7 @@ ON CONFLICT (key) DO NOTHING;
 -- 主题设置
 INSERT INTO system_settings (key, value, category, description, is_public) VALUES
 ('theme_mode', '"system"', 'theme', '主题模式: light, dark, system', true),
-('theme_primary_color', '"#4F46E5"', 'theme', '主色调', true)
+('theme_primary_color', '"#D4AF37"', 'theme', '主色调', true)
 ON CONFLICT (key) DO NOTHING;
 
 -- ============================================
