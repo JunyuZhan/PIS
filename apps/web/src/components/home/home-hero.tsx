@@ -78,10 +78,14 @@ export function HomeHero({ featuredAlbum, coverPhoto }: HomeHeroProps) {
         <div className="absolute inset-0 bg-gradient-to-br from-surface via-surface-elevated to-background" />
       )}
 
-      {/* 渐变遮罩 - 多层叠加创造深度 */}
-      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent" />
-      <div className="absolute inset-0 bg-gradient-to-r from-background/60 via-transparent to-background/60" />
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/40" />
+      {/* 渐变遮罩 - 多层叠加创造深度（仅在有背景图片时显示） */}
+      {coverUrl && (
+        <>
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-background/60 via-transparent to-background/60" />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/40" />
+        </>
+      )}
 
       {/* 内容区域 */}
       <div className="absolute inset-0 flex flex-col justify-center items-center text-center px-4 sm:px-6 z-10">

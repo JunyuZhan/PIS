@@ -4,6 +4,7 @@ import { getTranslations } from 'next-intl/server'
 import { HomeHeader } from '@/components/home/header'
 import { HomeHero } from '@/components/home/home-hero'
 import { AlbumGrid } from '@/components/home/album-grid'
+import { HomeAccessGuard } from '@/components/home/home-access-guard'
 import type { Database } from '@/types/database'
 import { defaultLocale } from '@/i18n/config'
 
@@ -221,6 +222,9 @@ export default async function HomePage() {
 
   return (
     <main className="min-h-screen bg-background overflow-x-hidden">
+      {/* 访问守卫：阻止分享链接用户访问主页 */}
+      <HomeAccessGuard />
+      
       {/* 头部导航 */}
       <HomeHeader />
 
