@@ -659,8 +659,8 @@ export function SystemSettingsSection() {
                   className={cn(
                     'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
                     formData.theme_mode === option.value
-                      ? 'bg-accent text-white'
-                      : 'bg-background hover:bg-surface-elevated'
+                      ? 'bg-accent text-background ring-2 ring-accent/30 shadow-md shadow-accent/20'
+                      : 'bg-background hover:bg-surface-elevated border border-border'
                   )}
                 >
                   {option.label}
@@ -685,17 +685,19 @@ export function SystemSettingsSection() {
               />
               <div className="flex gap-1">
                 {['#4F46E5', '#0EA5E9', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'].map(color => (
-                  <button
-                    key={color}
-                    type="button"
-                    onClick={() => updateField('theme_primary_color', color)}
-                    className={cn(
-                      'w-7 h-7 rounded-full transition-transform hover:scale-110',
-                      formData.theme_primary_color === color && 'ring-2 ring-offset-2 ring-accent'
-                    )}
-                    style={{ backgroundColor: color }}
-                    title={color}
-                  />
+                <button
+                  key={color}
+                  type="button"
+                  onClick={() => updateField('theme_primary_color', color)}
+                  className={cn(
+                    'w-7 h-7 rounded-full transition-all hover:scale-110',
+                    formData.theme_primary_color === color 
+                      ? 'ring-2 ring-offset-2 ring-accent shadow-md shadow-accent/30 scale-110' 
+                      : 'ring-1 ring-border hover:ring-accent/50'
+                  )}
+                  style={{ backgroundColor: color }}
+                  title={color}
+                />
                 ))}
               </div>
             </div>
@@ -717,10 +719,10 @@ export function SystemSettingsSection() {
                   type="button"
                   onClick={() => updateField('theme_border_radius', option.value)}
                   className={cn(
-                    'flex items-center gap-2 px-3 py-2 transition-colors',
+                    'flex items-center gap-2 px-3 py-2 transition-colors rounded-lg',
                     formData.theme_border_radius === option.value
-                      ? 'bg-accent text-white rounded-lg'
-                      : 'bg-background hover:bg-surface-elevated rounded-lg'
+                      ? 'bg-accent text-background ring-2 ring-accent/30 shadow-md shadow-accent/20'
+                      : 'bg-background hover:bg-surface-elevated border border-border'
                   )}
                 >
                   <div 

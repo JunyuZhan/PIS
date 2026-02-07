@@ -3,14 +3,21 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { Mail, Phone, MessageCircle, Instagram, X } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useSettings } from '@/hooks/use-settings'
 
 export function SiteFooter() {
+  const pathname = usePathname()
   const t = useTranslations('footer')
   const { settings } = useSettings()
   const currentYear = new Date().getFullYear()
+
+  // 如果是后台页面，不显示页脚
+  if (pathname?.startsWith('/admin')) {
+    return null
+  }
 
   // 使用数据库设置，环境变量作为后备
   const photographerName = settings?.brand_name || process.env.NEXT_PUBLIC_PHOTOGRAPHER_NAME || 'PIS Photography'

@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl'
 import { Camera, Images, Settings, LogOut, Home, Brush, Users, BarChart3, UserCheck } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { AuthUser } from '@/lib/auth'
+import { ThemeToggle } from '@/components/theme-toggle'
 
 type UserRole = 'admin' | 'photographer' | 'retoucher' | 'guest'
 
@@ -119,9 +120,13 @@ export function SidebarContent({ user }: { user: AuthUser }) {
           })}
       </nav>
 
-      {/* 语言切换器 */}
+      {/* 语言切换器和主题切换 */}
       <div className="px-4 py-2 border-t border-border">
-        <div className="flex justify-center">
+        <div className="flex items-center justify-center gap-2">
+          <ThemeToggle 
+            size="sm" 
+            className="p-2 min-h-[44px] flex items-center justify-center rounded-lg hover:bg-surface transition-colors active:scale-[0.98] touch-manipulation" 
+          />
           <LanguageSwitcher />
         </div>
       </div>

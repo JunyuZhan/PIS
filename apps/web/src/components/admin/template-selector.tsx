@@ -40,7 +40,9 @@ function TemplatePreviewCard({
       className={cn(
         'relative w-full rounded-lg overflow-hidden transition-all border-2',
         'hover:ring-2 hover:ring-accent/50',
-        isSelected ? 'border-accent ring-2 ring-accent/30' : 'border-border'
+        isSelected 
+          ? 'border-accent ring-2 ring-accent/40 shadow-lg shadow-accent/20 dark:shadow-accent/10' 
+          : 'border-border'
       )}
     >
       {/* 预览区域 */}
@@ -121,8 +123,8 @@ function TemplatePreviewCard({
 
         {/* 选中标记 */}
         {isSelected && (
-          <div className="absolute top-2 right-2 w-6 h-6 bg-accent rounded-full flex items-center justify-center">
-            <Check className="w-4 h-4 text-white" />
+          <div className="absolute top-2 right-2 w-6 h-6 bg-accent rounded-full flex items-center justify-center shadow-lg ring-2 ring-background/50">
+            <Check className="w-4 h-4 text-background" strokeWidth={3} />
           </div>
         )}
       </div>

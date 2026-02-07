@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2, Copy, Check, ChevronDown, ChevronUp, Download, Server } from 'lucide-react'
+import { Loader2, Copy, Check, ChevronDown, ChevronUp, Download, Server, Lock, Globe, Image as ImageIcon } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,7 @@ import type { AlbumTemplate } from '@/types/database'
 import { StylePresetSelector } from './style-preset-selector'
 import { getFtpServerHost, getFtpServerPort } from '@/lib/utils'
 import { showSuccess } from '@/lib/toast'
+import { cn } from '@/lib/utils'
 
 interface CreateAlbumDialogProps {
   open: boolean
@@ -33,8 +34,15 @@ export function CreateAlbumDialog({ open, onOpenChange }: CreateAlbumDialogProps
   const [showStyleSelector, setShowStyleSelector] = useState(false)
   const [presets, setPresets] = useState<Array<{ id: string; name: string }>>([])
   const [allowBatchDownload, setAllowBatchDownload] = useState(false)
+  // 关键选项
+  const [isPublic, setIsPublic] = useState(false)
+  const [password, setPassword] = useState('')
+  const [watermarkEnabled, setWatermarkEnabled] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [defaultSettings, setDefaultSettings] = useState<{
+    defaultWatermarkEnabled: boolean
+  } | null>(null)
   const [created, setCreated] = useState<{
     id: string
     slug: string
@@ -48,8 +56,26 @@ export function CreateAlbumDialog({ open, onOpenChange }: CreateAlbumDialogProps
     if (open) {
       loadTemplates()
       loadPresets()
+      loadDefaultSettings()
     }
   }, [open])
+
+  const loadDefaultSettings = async () => {
+    try {
+      const res = await fetch('/api/public/settings')
+      const data = await res.json()
+      if (res.ok && data.data) {
+        const settings = data.data
+        setDefaultSettings({
+          defaultWatermarkEnabled: settings.default_watermark_enabled === true,
+        })
+        // 应用默认设置
+        setWatermarkEnabled(settings.default_watermark_enabled === true)
+      }
+    } catch (error) {
+      console.error('加载默认设置失败:', error)
+    }
+  }
 
   const loadPresets = async () => {
     try {
@@ -126,9 +152,16 @@ export function CreateAlbumDialog({ open, onOpenChange }: CreateAlbumDialogProps
       if (templateId) {
         // 使用模板配置（模板配置已经包含了 allow_batch_download）
         Object.assign(requestBody, templateConfig)
+        // 但用户手动设置的选项优先于模板配置
+        if (password) requestBody.password = password.trim()
+        if (isPublic !== undefined) requestBody.is_public = isPublic
+        requestBody.watermark_enabled = watermarkEnabled
       } else {
         // 使用用户手动选择的配置
+        requestBody.is_public = isPublic
+        requestBody.password = password.trim() || null
         requestBody.allow_batch_download = allowBatchDownload
+        requestBody.watermark_enabled = watermarkEnabled
       }
 
       const res = await fetch('/api/admin/albums', {
@@ -178,6 +211,9 @@ export function CreateAlbumDialog({ open, onOpenChange }: CreateAlbumDialogProps
     setStylePresetId(null)
     setShowStyleSelector(false)
     setAllowBatchDownload(false)
+    setIsPublic(false)
+    setPassword('')
+    setWatermarkEnabled(defaultSettings?.defaultWatermarkEnabled ?? false)
     setError('')
     setCreated(null)
     onOpenChange(false)
@@ -305,6 +341,90 @@ export function CreateAlbumDialog({ open, onOpenChange }: CreateAlbumDialogProps
                 </div>
               )}
 
+              {/* 关键设置 */}
+              <div className="space-y-3">
+                {/* 公开/私有设置 */}
+                <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-surface">
+                  <div className="flex items-center gap-2 flex-1 pr-4">
+                    {isPublic ? (
+                      <Globe className="w-4 h-4 text-accent" />
+                    ) : (
+                      <Lock className="w-4 h-4 text-text-muted" />
+                    )}
+                    <div>
+                      <p className="font-medium text-sm">
+                        {isPublic ? '公开相册' : '私有相册'}
+                      </p>
+                      <p className="text-xs text-text-secondary mt-0.5">
+                        {isPublic ? '任何人都可以通过链接访问' : '仅知道链接和密码的人可访问'}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsPublic(!isPublic)}
+                    className={cn(
+                      'relative rounded-full transition-colors shrink-0 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 flex items-center justify-center',
+                      isPublic ? 'bg-accent' : 'bg-surface-elevated',
+                      'w-12 h-7 md:w-11 md:h-6'
+                    )}
+                  >
+                    <div className={cn(
+                      'absolute top-[2px] left-[2px] w-6 h-6 md:w-5 md:h-5 bg-white rounded-full transition-transform',
+                      isPublic ? 'translate-x-5 md:translate-x-5' : 'translate-x-0'
+                    )} />
+                  </button>
+                </div>
+
+                {/* 访问密码 */}
+                {!isPublic && (
+                  <div>
+                    <label
+                      htmlFor="password"
+                      className="block text-sm font-medium text-text-secondary mb-2"
+                    >
+                      访问密码
+                    </label>
+                    <input
+                      id="password"
+                      type="text"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="input"
+                      placeholder="设置相册访问密码（可选）"
+                    />
+                    <p className="text-xs text-text-muted mt-1">
+                      访客需要输入密码才能查看相册
+                    </p>
+                  </div>
+                )}
+
+                {/* 水印设置 */}
+                <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-surface">
+                  <div className="flex items-center gap-2 flex-1 pr-4">
+                    <ImageIcon className="w-4 h-4 text-text-muted" />
+                    <div>
+                      <p className="font-medium text-sm">启用水印</p>
+                      <p className="text-xs text-text-secondary mt-0.5">在照片上添加水印保护</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setWatermarkEnabled(!watermarkEnabled)}
+                    className={cn(
+                      'relative rounded-full transition-colors shrink-0 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 flex items-center justify-center',
+                      watermarkEnabled ? 'bg-accent' : 'bg-surface-elevated',
+                      'w-12 h-7 md:w-11 md:h-6'
+                    )}
+                  >
+                    <div className={cn(
+                      'absolute top-[2px] left-[2px] w-6 h-6 md:w-5 md:h-5 bg-white rounded-full transition-transform',
+                      watermarkEnabled ? 'translate-x-5 md:translate-x-5' : 'translate-x-0'
+                    )} />
+                  </button>
+                </div>
+              </div>
+
               {/* 批量下载设置（仅在未选择模板时显示） */}
               {!templateId && (
                 <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-surface">
@@ -318,13 +438,16 @@ export function CreateAlbumDialog({ open, onOpenChange }: CreateAlbumDialogProps
                   <button
                     type="button"
                     onClick={() => setAllowBatchDownload(!allowBatchDownload)}
-                    className={`relative rounded-full transition-colors shrink-0 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 flex items-center justify-center ${
-                      allowBatchDownload ? 'bg-accent' : 'bg-surface-elevated'
-                    } w-12 h-7 md:w-11 md:h-6`}
+                    className={cn(
+                      'relative rounded-full transition-colors shrink-0 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 flex items-center justify-center',
+                      allowBatchDownload ? 'bg-accent' : 'bg-surface-elevated',
+                      'w-12 h-7 md:w-11 md:h-6'
+                    )}
                   >
-                    <div className={`absolute top-[2px] left-[2px] w-6 h-6 md:w-5 md:h-5 bg-white rounded-full transition-transform ${
+                    <div className={cn(
+                      'absolute top-[2px] left-[2px] w-6 h-6 md:w-5 md:h-5 bg-white rounded-full transition-transform',
                       allowBatchDownload ? 'translate-x-5 md:translate-x-5' : 'translate-x-0'
-                    }`} />
+                    )} />
                   </button>
                 </div>
               )}

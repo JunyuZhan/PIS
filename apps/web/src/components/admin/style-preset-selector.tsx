@@ -82,8 +82,8 @@ export function StylePresetSelector({
           onClick={() => onChange(null)}
           className={`w-full p-4 rounded-lg border-2 transition-all text-left min-h-[44px] active:scale-[0.98] touch-manipulation ${
             value === null
-              ? 'border-primary bg-primary/10'
-              : 'border-border hover:border-primary/50 active:bg-surface-elevated'
+              ? 'border-accent bg-accent/20 dark:bg-accent/10 ring-2 ring-accent/30 shadow-md shadow-accent/20'
+              : 'border-border hover:border-accent/50 active:bg-surface-elevated'
           }`}
         >
           <div className="flex items-center justify-between">
@@ -92,7 +92,7 @@ export function StylePresetSelector({
               <div className="text-sm text-text-muted mt-1">保持原始色彩</div>
             </div>
             {value === null && (
-              <Check className="w-5 h-5 text-primary" />
+              <Check className="w-5 h-5 text-accent" strokeWidth={3} />
             )}
           </div>
         </button>
@@ -236,8 +236,8 @@ function PresetCard({
       onClick={onSelect}
       className={`rounded-lg border-2 transition-all text-left active:scale-[0.98] touch-manipulation overflow-hidden w-full ${
         selected
-          ? 'border-primary bg-primary/10'
-          : 'border-border hover:border-primary/50 active:bg-surface-elevated'
+          ? 'border-accent bg-accent/20 dark:bg-accent/10 ring-2 ring-accent/30 shadow-md shadow-accent/20'
+          : 'border-border hover:border-accent/50 active:bg-surface-elevated'
       }`}
     >
       {/* 垂直布局：预览图在上，名称和描述在下 */}
@@ -259,8 +259,8 @@ function PresetCard({
             />
             {/* 选中标记 */}
             {selected && (
-              <div className="absolute top-1.5 right-1.5 bg-primary text-primary-foreground rounded-full p-1 shadow-lg">
-                <Check className="w-3 h-3" />
+              <div className="absolute top-1.5 right-1.5 bg-accent text-background rounded-full p-1 shadow-lg ring-2 ring-background/50">
+                <Check className="w-3 h-3" strokeWidth={3} />
               </div>
             )}
           </div>
@@ -268,8 +268,8 @@ function PresetCard({
           <div className="relative w-full aspect-square rounded-t bg-surface border-b border-border flex items-center justify-center">
             <div className="text-xs text-text-muted text-center px-2">无预览</div>
             {selected && (
-              <div className="absolute top-1.5 right-1.5 bg-primary text-primary-foreground rounded-full p-1 shadow-lg">
-                <Check className="w-3 h-3" />
+              <div className="absolute top-1.5 right-1.5 bg-accent text-background rounded-full p-1 shadow-lg ring-2 ring-background/50">
+                <Check className="w-3 h-3" strokeWidth={3} />
               </div>
             )}
           </div>
