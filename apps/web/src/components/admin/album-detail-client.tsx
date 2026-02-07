@@ -46,6 +46,7 @@ export function AlbumDetailClient({ album, initialPhotos, mediaUrl: serverMediaU
   const [isReprocessing, setIsReprocessing] = useState(false)
   const [showDeleted, setShowDeleted] = useState(false) // 是否显示回收站
   const [isRestoring, setIsRestoring] = useState(false)
+  const [failedImageLoads, setFailedImageLoads] = useState<Set<string>>(new Set()) // 记录加载失败的照片ID
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean
     title: string
@@ -1170,8 +1171,12 @@ export function AlbumDetailClient({ album, initialPhotos, mediaUrl: serverMediaU
                   className="object-cover transition-transform duration-300 group-hover:scale-105"
                   key={`${photo.id}-${photo.rotation ?? 'auto'}-${photo.updated_at || ''}-${mediaUrl}`}
                   unoptimized // 跳过 Next.js Image Optimization，直接使用原始图片（避免 Vercel 无法访问 HTTP 媒体服务器）
+                  onError={() => {
+                    // 缩略图加载失败，标记为失败
+                    setFailedImageLoads(prev => new Set(prev).add(photo.id))
+                  }}
                 />
-              ) : photo.original_key && photo.status === 'failed' ? (
+              ) : photo.original_key && photo.status === 'failed' && !failedImageLoads.has(photo.id) ? (
                 // 如果缩略图生成失败但原图存在，显示原图（降级显示）
                 <Image
                   src={mediaUrl ? `${mediaUrl}/${photo.original_key}${photo.updated_at ? `?t=${new Date(photo.updated_at).getTime()}` : ''}` : ''}
@@ -1182,8 +1187,12 @@ export function AlbumDetailClient({ album, initialPhotos, mediaUrl: serverMediaU
                   className="object-cover transition-transform duration-300 group-hover:scale-105 opacity-80"
                   key={`${photo.id}-original-${photo.updated_at || ''}-${mediaUrl}`}
                   unoptimized
+                  onError={() => {
+                    // 原图也加载失败，标记为失败，显示错误状态
+                    setFailedImageLoads(prev => new Set(prev).add(photo.id))
+                  }}
                 />
-              ) : photo.status === 'failed' ? (
+              ) : photo.status === 'failed' || failedImageLoads.has(photo.id) ? (
                 <div className="w-full h-full bg-gradient-to-br from-red-500/10 to-red-600/10 flex flex-col items-center justify-center gap-2 border-2 border-red-500/20 relative">
                   <AlertCircle className="w-6 h-6 text-red-400" />
                   <span className="text-red-400 text-xs">处理失败</span>

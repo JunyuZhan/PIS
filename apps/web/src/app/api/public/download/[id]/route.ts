@@ -41,11 +41,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const db = await createClient()
 
     // 获取照片信息
+    // 允许 completed 状态的照片，或者 failed 状态但有原图的照片
     const photoResult = await db
-      .from<{ id: string; original_key: string | null; filename: string | null; album_id: string }>('photos')
-      .select('id, original_key, filename, album_id')
+      .from<{ id: string; original_key: string | null; filename: string | null; album_id: string; status: string }>('photos')
+      .select('id, original_key, filename, album_id, status')
       .eq('id', id)
-      .eq('status', 'completed')
+      .in('status', ['completed', 'failed'])
       .single()
 
     if (photoResult.error || !photoResult.data) {
@@ -53,6 +54,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     const photo = photoResult.data
+
+    // 如果照片状态是 failed，必须有 original_key 才能下载
+    if (photo.status === 'failed' && !photo.original_key) {
+      return ApiError.notFound('照片文件不存在')
+    }
 
     // 获取相册信息，检查下载权限
     const albumResult = await db
