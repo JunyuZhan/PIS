@@ -93,7 +93,7 @@ export function AlbumSplashScreen({ album, posterImageUrl }: AlbumSplashScreenPr
 
           {/* 内容区域 */}
           <div className={`relative z-10 h-full flex flex-col items-center justify-center px-6 pb-24 sm:pb-32 ${
-            hasPosterImage ? 'text-white' : 'text-white'
+            hasPosterImage ? 'text-white' : 'text-text-primary'
           }`}>
             {/* 关闭按钮 - 使用毛玻璃效果 */}
             <button
@@ -104,7 +104,7 @@ export function AlbumSplashScreen({ album, posterImageUrl }: AlbumSplashScreenPr
               className={`absolute top-4 right-4 sm:top-6 sm:right-6 p-2 rounded-full backdrop-blur-md transition-colors ${
                 hasPosterImage
                   ? 'bg-black/30 hover:bg-black/50 text-white border border-white/20'
-                  : 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
+                  : 'bg-surface-elevated/80 hover:bg-surface-elevated text-text-primary border border-border'
               }`}
               aria-label="跳过启动页"
             >
@@ -120,7 +120,7 @@ export function AlbumSplashScreen({ album, posterImageUrl }: AlbumSplashScreenPr
                 className="flex items-center justify-center gap-1.5 sm:gap-2 mb-4 sm:mb-6"
               >
                 <Aperture className="w-6 h-6 sm:w-8 sm:h-8 text-accent" />
-                <span className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-white tracking-wider">
+                <span className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold tracking-wider">
                   PIS
                 </span>
               </motion.div>
@@ -166,12 +166,16 @@ export function AlbumSplashScreen({ album, posterImageUrl }: AlbumSplashScreenPr
                 transition={{ delay: 0.4, duration: 0.7, ease: 'easeOut' }}
                 className="text-center mb-8"
               >
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md rounded-full border border-white/20">
-                  <span className="text-sm sm:text-base text-white font-medium">
+                <div className={`inline-flex items-center gap-2 px-4 py-2 backdrop-blur-md rounded-full ${
+                  hasPosterImage 
+                    ? 'bg-white/10 border border-white/20' 
+                    : 'bg-surface-elevated/80 border border-border'
+                }`}>
+                  <span className="text-sm sm:text-base font-medium">
                     {photographerName}
                   </span>
                   <span className="w-1 h-1 bg-accent rounded-full" />
-                  <span className="text-xs sm:text-sm text-white/80">
+                  <span className="text-xs sm:text-sm text-text-secondary">
                     {photographerTagline}
                   </span>
                 </div>
@@ -193,7 +197,7 @@ export function AlbumSplashScreen({ album, posterImageUrl }: AlbumSplashScreenPr
                 className={`group relative px-6 py-3 sm:px-8 sm:py-4 rounded-full backdrop-blur-md border-2 transition-all duration-300 ${
                   hasPosterImage
                     ? 'bg-white/20 hover:bg-white/30 text-white border-white/40 hover:border-white/60 shadow-lg hover:shadow-xl'
-                    : 'bg-white/10 hover:bg-white/20 text-white border-white/30 hover:border-white/50 shadow-lg hover:shadow-xl'
+                    : 'bg-accent hover:bg-accent/90 text-background border-accent hover:border-accent/80 shadow-lg hover:shadow-xl'
                 }`}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -211,7 +215,7 @@ export function AlbumSplashScreen({ album, posterImageUrl }: AlbumSplashScreenPr
                   ease: 'easeInOut',
                   repeatType: 'reverse'
                 }}
-                className="text-white/80"
+                className="text-text-secondary"
               >
                 <ChevronDown className="w-5 h-5 sm:w-6 sm:h-6" />
               </motion.div>
