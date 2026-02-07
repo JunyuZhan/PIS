@@ -181,7 +181,10 @@ export async function POST(request: NextRequest) {
     if (turnstileSecretKey) {
       if (!turnstileToken) {
         console.warn('Turnstile configured but no token provided')
-        return handleError(new Error('请完成人机验证'), '请完成人机验证')
+        return NextResponse.json(
+          { error: { code: 'CAPTCHA_REQUIRED', message: '请完成人机验证' } },
+          { status: 400 }
+        )
       }
 
       // 验证 token
