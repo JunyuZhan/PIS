@@ -42,20 +42,12 @@ export async function middleware(request: NextRequest) {
   const localeCookie = request.cookies.get("NEXT_LOCALE")?.value;
   let locale: Locale = defaultLocale;
 
-  // Check Accept-Language header for browser preference
-  if (!localeCookie) {
-    const acceptLanguage = request.headers.get("accept-language");
-    if (acceptLanguage) {
-      // Simple language detection
-      if (acceptLanguage.includes("en")) {
-        locale = "en";
-      } else {
-        locale = "zh-CN";
-      }
-    }
-  } else if (locales.includes(localeCookie as Locale)) {
+  // 优先使用 Cookie 中的语言设置
+  if (localeCookie && locales.includes(localeCookie as Locale)) {
     locale = localeCookie as Locale;
   }
+  // 如果没有 Cookie，默认使用中文（不再根据浏览器语言检测）
+  // 用户可以通过语言切换器手动更改语言
 
   // Handle custom auth for admin routes first (takes priority over locale)
   if (pathname.startsWith("/admin")) {

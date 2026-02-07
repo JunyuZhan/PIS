@@ -111,7 +111,7 @@ interface ThemeProviderProps {
 
 export function ThemeProvider({ 
   children, 
-  defaultTheme = 'system',
+  defaultTheme = 'dark', // 默认暗色模式
   defaultPrimaryColor = DEFAULT_PRIMARY_COLOR,
   defaultBorderRadius = DEFAULT_BORDER_RADIUS as BorderRadius,
 }: ThemeProviderProps) {

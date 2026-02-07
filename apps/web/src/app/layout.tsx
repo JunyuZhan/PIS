@@ -197,7 +197,7 @@ export default async function RootLayout({
             __html: `
               (function() {
                 try {
-                  var theme = localStorage.getItem('pis-theme') || 'system';
+                  var theme = localStorage.getItem('pis-theme') || 'dark';
                   var resolved = theme;
                   if (theme === 'system') {
                     resolved = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';

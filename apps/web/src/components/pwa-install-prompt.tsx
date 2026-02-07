@@ -12,6 +12,7 @@ export function PWAInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [showPrompt, setShowPrompt] = useState(false)
   const [isIOS, setIsIOS] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
   const [isStandalone, setIsStandalone] = useState(false)
   const hasBeforeInstallPromptRef = useRef(false)
   const promptShownRef = useRef(false)
@@ -57,6 +58,10 @@ export function PWAInstallPrompt() {
     // 检查是否是 iOS
     const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as WindowMSStream).MSStream
     setIsIOS(iOS)
+    
+    // 检查是否是移动设备（包括 Android、iOS 等）
+    const mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+    setIsMobile(mobile)
 
     // 检查 Service Worker 是否已注册
     const checkServiceWorker = async () => {
@@ -80,20 +85,53 @@ export function PWAInstallPrompt() {
     checkServiceWorker()
 
     // 监听 beforeinstallprompt 事件（仅 Chrome/Edge/Opera 等支持）
-    const handler = (e: Event) => {
+    const handler = async (e: Event) => {
       console.log('[PWA] beforeinstallprompt event fired')
       e.preventDefault()
-      setDeferredPrompt(e as BeforeInstallPromptEvent)
+      const promptEvent = e as BeforeInstallPromptEvent
+      setDeferredPrompt(promptEvent)
       hasBeforeInstallPromptRef.current = true
-      // 延迟显示提示，让用户先浏览
-      setTimeout(() => {
-        // 再次检查是否已经显示过（防止重复）
-        if (shouldShowPrompt()) {
-          console.log('[PWA] Showing install prompt')
-          markPromptShown()
-          setShowPrompt(true)
-        }
-      }, 3000)
+      
+      // 移动端：直接弹出系统安装提示
+      if (mobile && !iOS) {
+        // 延迟一点时间，确保页面加载完成
+        setTimeout(async () => {
+          if (shouldShowPrompt()) {
+            try {
+              console.log('[PWA] Mobile device detected, showing system install prompt directly')
+              // 先标记，避免重复弹出
+              markPromptShown()
+              await promptEvent.prompt()
+              const { outcome } = await promptEvent.userChoice
+              if (outcome === 'accepted') {
+                console.log('[PWA] User accepted install prompt')
+              } else {
+                console.log('[PWA] User dismissed install prompt')
+              }
+              setDeferredPrompt(null)
+            } catch (error) {
+              console.error('[PWA] Install prompt error:', error)
+              // 如果直接弹出失败，显示自定义提示
+              // 注意：此时 markPromptShown() 已经调用，需要重置才能显示
+              promptShownRef.current = false
+              localStorage.removeItem('pwa-prompt-dismissed')
+              if (shouldShowPrompt()) {
+                markPromptShown()
+                setShowPrompt(true)
+              }
+            }
+          }
+        }, 2000)
+      } else {
+        // 桌面端：显示自定义提示框，让用户先浏览
+        setTimeout(() => {
+          if (shouldShowPrompt()) {
+            console.log('[PWA] Desktop device, showing custom install prompt')
+            markPromptShown()
+            setShowPrompt(true)
+          }
+        }, 3000)
+      }
     }
 
     window.addEventListener('beforeinstallprompt', handler)
@@ -217,14 +255,29 @@ export function PWAInstallPrompt() {
                 ) : (
                   <div className="text-xs text-text-muted space-y-1">
                     <p className="font-medium text-text-secondary mb-1">手动安装步骤：</p>
-                    <p className="flex items-center gap-1">
-                      <span className="bg-surface px-1.5 py-0.5 rounded">1</span>
-                      点击浏览器地址栏右侧的 <Download className="w-3.5 h-3.5 inline" /> 图标
-                    </p>
-                    <p className="flex items-center gap-1">
-                      <span className="bg-surface px-1.5 py-0.5 rounded">2</span>
-                      选择"安装"或"添加到主屏幕"
-                    </p>
+                    {isMobile ? (
+                      <>
+                        <p className="flex items-center gap-1">
+                          <span className="bg-surface px-1.5 py-0.5 rounded">1</span>
+                          点击浏览器菜单（右上角 <span className="text-accent">⋮</span>）
+                        </p>
+                        <p className="flex items-center gap-1">
+                          <span className="bg-surface px-1.5 py-0.5 rounded">2</span>
+                          选择"安装应用"或"添加到主屏幕"
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="flex items-center gap-1">
+                          <span className="bg-surface px-1.5 py-0.5 rounded">1</span>
+                          点击浏览器地址栏右侧的 <Download className="w-3.5 h-3.5 inline" /> 图标
+                        </p>
+                        <p className="flex items-center gap-1">
+                          <span className="bg-surface px-1.5 py-0.5 rounded">2</span>
+                          选择"安装"或"添加到主屏幕"
+                        </p>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
