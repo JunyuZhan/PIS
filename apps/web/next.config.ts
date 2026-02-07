@@ -351,7 +351,7 @@ const nextConfig: NextConfig = {
             // 所以 CSP 不需要允许 localhost:19000，因为上传会回退到代理方式
             value: isDev
               ? ""
-              : `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src ${connectSrcString} https://challenges.cloudflare.com; media-src 'self' blob: https:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'self' https://challenges.cloudflare.com; frame-ancestors 'none';`,
+              : `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src ${connectSrcString} https://challenges.cloudflare.com https://cloudflareinsights.com; media-src 'self' blob: https:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'self' https://challenges.cloudflare.com; frame-ancestors 'none';`,
           },
         ].filter((header) => header.value !== ""), // 过滤空值
       },
