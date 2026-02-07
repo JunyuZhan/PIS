@@ -199,16 +199,15 @@ export function PhotoLightbox({
 
     return photos.map((photo) => {
       const exif = photo.exif as Record<string, unknown> | null;
-      const make =
-        (exif?.image as Record<string, unknown>)?.Make ||
-        (exif?.Make as string);
-      const model =
-        (exif?.image as Record<string, unknown>)?.Model ||
-        (exif?.Model as string);
-      const exifData = exif?.exif as Record<string, unknown> | undefined;
+      // 支持两种大小写：Image/image（exif-reader 输出大写，某些库输出小写）
+      const imageData = (exif?.Image || exif?.image) as Record<string, unknown> | undefined;
+      const make = imageData?.Make as string | undefined;
+      const model = imageData?.Model as string | undefined;
+      // 支持两种大小写：Photo/photo 或 exif（不同 EXIF 库的输出格式不同）
+      const exifData = (exif?.Photo || exif?.photo || exif?.exif) as Record<string, unknown> | undefined;
       const fNumber = exifData?.FNumber as number | undefined;
       const exposureTime = exifData?.ExposureTime as number | undefined;
-      const iso = exifData?.ISO as number | undefined;
+      const iso = (exifData?.ISO || exifData?.ISOSpeedRatings) as number | undefined;
       const focalLength = exifData?.FocalLength as number | undefined;
 
       const exifString = [
