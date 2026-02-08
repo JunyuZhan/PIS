@@ -11,7 +11,6 @@ import { type NextRequest, NextResponse } from "next/server";
 import { updateSession } from "@/lib/auth/middleware";
 import { getUserFromRequest } from "@/lib/auth/jwt-helpers";
 import { locales, defaultLocale, type Locale } from "./i18n/config";
-import { createAdminClient } from "@/lib/database";
 
 // 扩展 globalThis 类型以支持自定义属性
 declare global {
@@ -73,27 +72,17 @@ export async function middleware(request: NextRequest) {
   const isHomePage = pathname === "/" || locales.some(loc => pathname === `/${loc}`)
   if (isHomePage) {
     try {
-      const adminDb = await createAdminClient()
-      const { data: settingData, error: settingError } = await adminDb
-        .from('system_settings')
-        .select('key, value')
-        .eq('key', 'allow_public_home')
-        .single()
-
-      if (!settingError && settingData) {
-        // 解析 JSON 字符串值
-        let allowPublicHome = true // 默认允许
-        const value = (settingData as { key: string; value: unknown }).value
-        if (typeof value === 'string') {
-          try {
-            const parsed = JSON.parse(value)
-            allowPublicHome = parsed === true
-          } catch {
-            allowPublicHome = value === 'true'
-          }
-        } else if (typeof value === 'boolean') {
-          allowPublicHome = value
-        }
+      // 使用 fetch 调用公开 API 获取设置，避免在 Edge Runtime 中使用 Node.js 模块
+      const settingsUrl = new URL('/api/public/settings', request.url)
+      const settingsResponse = await fetch(settingsUrl.toString(), {
+        headers: {
+          'Accept': 'application/json',
+        },
+      })
+      
+      if (settingsResponse.ok) {
+        const settings = await settingsResponse.json()
+        const allowPublicHome = settings.allow_public_home !== false // 默认允许
 
         // 如果不允许公开访问首页，检查用户是否已登录
         if (!allowPublicHome) {
