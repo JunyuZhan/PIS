@@ -13,6 +13,8 @@ export function SiteFooter() {
   const t = useTranslations('footer')
   const { settings } = useSettings()
   const currentYear = new Date().getFullYear()
+  // 重要：所有 hooks 必须在条件返回之前调用，保持调用顺序一致
+  const [showWechatQr, setShowWechatQr] = useState(false)
 
   // 如果是后台页面，不显示页脚
   if (pathname?.startsWith('/admin')) {
@@ -35,7 +37,6 @@ export function SiteFooter() {
   
   // 判断是否有联系方式需要显示
   const hasContactInfo = email || phone || wechatQrcode || weibo || instagram
-  const [showWechatQr, setShowWechatQr] = useState(false)
 
   return (
     <footer className="border-t border-border bg-background">
