@@ -320,6 +320,8 @@ function toRelativePresignedUrl(url: string): string {
 // API 认证配置
 // ============================================
 const WORKER_API_KEY = process.env.WORKER_API_KEY;
+// 人脸识别功能开关（默认禁用，设置为 'true' 启用）
+const ENABLE_FACE_RECOGNITION = process.env.ENABLE_FACE_RECOGNITION === "true";
 if (!WORKER_API_KEY) {
   console.warn("⚠️  WORKER_API_KEY not set, API endpoints are unprotected!");
   console.warn("   Please set WORKER_API_KEY in .env for production use");
@@ -952,7 +954,8 @@ const worker = new Worker<PhotoJobData>(
       if (error) throw error;
 
       // 8. 人脸识别 (异步执行，不阻塞)
-      if (finalStatus === "completed") {
+      // 通过环境变量 ENABLE_FACE_RECOGNITION=true 启用
+      if (ENABLE_FACE_RECOGNITION && finalStatus === "completed") {
         try {
           // 创建旋转 pipeline
           let facePipeline = sharp(processingBuffer);

@@ -26,6 +26,9 @@ interface FloatingActionsProps {
   currentLayout: LayoutMode
 }
 
+// 人脸识别功能开关（通过环境变量控制，默认禁用）
+const ENABLE_FACE_RECOGNITION = process.env.NEXT_PUBLIC_ENABLE_FACE_RECOGNITION === 'true'
+
 export function FloatingActions({ album, currentSort, currentLayout }: FloatingActionsProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -156,23 +159,25 @@ export function FloatingActions({ album, currentSort, currentLayout }: FloatingA
                 )}
               </motion.button>
 
-              {/* 人脸搜索按钮 */}
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => {
-                  setShowFaceSearch(true)
-                  setIsExpanded(false)
-                }}
-                className={cn(
-                  'w-10 h-10 rounded-full shadow-lg flex items-center justify-center',
-                  'bg-surface border border-border hover:bg-surface-elevated',
-                  'text-text-primary transition-all backdrop-blur-sm'
-                )}
-                title="找自己"
-              >
-                <ScanFace className="w-4 h-4" />
-              </motion.button>
+              {/* 人脸搜索按钮（通过环境变量控制显示） */}
+              {ENABLE_FACE_RECOGNITION && (
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    setShowFaceSearch(true)
+                    setIsExpanded(false)
+                  }}
+                  className={cn(
+                    'w-10 h-10 rounded-full shadow-lg flex items-center justify-center',
+                    'bg-surface border border-border hover:bg-surface-elevated',
+                    'text-text-primary transition-all backdrop-blur-sm'
+                  )}
+                  title="找自己"
+                >
+                  <ScanFace className="w-4 h-4" />
+                </motion.button>
+              )}
 
               {/* 排序按钮 */}
               <motion.button
@@ -287,8 +292,8 @@ export function FloatingActions({ album, currentSort, currentLayout }: FloatingA
         </div>
       )}
 
-      {/* 人脸搜索模态框 */}
-      {mounted && (
+      {/* 人脸搜索模态框（仅在启用人脸识别时渲染） */}
+      {ENABLE_FACE_RECOGNITION && mounted && (
         <FaceSearchModal 
           albumSlug={album.slug}
           isOpen={showFaceSearch}
