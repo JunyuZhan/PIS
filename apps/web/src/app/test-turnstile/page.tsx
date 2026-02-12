@@ -56,20 +56,18 @@ export default function TestTurnstilePage() {
 
           {hasTurnstile && (
             <>
-              <div className="hidden">
-                <Turnstile
-                  onVerify={(token) => {
-                    setToken(token)
-                    setError(null)
-                  }}
-                  onError={() => {
-                    setError('Turnstile 验证失败')
-                  }}
-                  onExpire={() => {
-                    setToken(null)
-                  }}
-                />
-              </div>
+              <Turnstile
+                onVerify={(token) => {
+                  setToken(token)
+                  setError(null)
+                }}
+                onError={() => {
+                  setError('Turnstile 验证失败')
+                }}
+                onExpire={() => {
+                  setToken(null)
+                }}
+              />
 
               <div>
                 <p className="text-sm text-text-secondary mb-2">验证状态：</p>

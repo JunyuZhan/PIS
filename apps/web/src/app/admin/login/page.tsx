@@ -913,27 +913,25 @@ export default function LoginPage() {
             {/* Cloudflare Turnstile (Invisible 模式) */}
             {hasTurnstile && (
               <>
-                {/* 隐藏的容器，用于 Invisible 模式 */}
-                <div ref={turnstileContainerRef} className="hidden">
-                  <Turnstile
-                    onVerify={(token) => {
-                      setTurnstileToken(token);
-                      setTurnstileError(false);
-                    }}
-                    onError={() => {
-                      console.warn(
-                        "Turnstile verification error, will proceed with fallback",
-                      );
-                      setTurnstileError(true);
-                      // 不设置错误消息，允许降级登录
-                      // 服务端会处理 Turnstile 验证失败的情况
-                    }}
-                    onExpire={() => {
-                      setTurnstileToken(null);
-                      // Token 过期不影响登录，用户重新提交时会重新验证
-                    }}
-                  />
-                </div>
+                {/* Turnstile 组件 - 无需外层隐藏 div，组件内部已处理 */}
+                <Turnstile
+                  onVerify={(token) => {
+                    setTurnstileToken(token);
+                    setTurnstileError(false);
+                  }}
+                  onError={() => {
+                    console.warn(
+                      "Turnstile verification error, will proceed with fallback",
+                    );
+                    setTurnstileError(true);
+                    // 不设置错误消息，允许降级登录
+                    // 服务端会处理 Turnstile 验证失败的情况
+                  }}
+                  onExpire={() => {
+                    setTurnstileToken(null);
+                    // Token 过期不影响登录，用户重新提交时会重新验证
+                  }}
+                />
 
                 {/* 移动端刷新验证按钮（仅在验证超时时显示） */}
                 {showRefreshButton && (
